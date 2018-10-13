@@ -1,0 +1,31 @@
+{
+  "dist/react-flip.cjs.js": {
+    "bundled": 7667,
+    "minified": 3755,
+    "gzipped": 1375
+  },
+  "dist/react-flip.umd.js": {
+    "bundled": 13142,
+    "minified": 4357,
+    "gzipped": 1677
+  },
+  "dist/react-flip.umd.min.js": {
+    "bundled": 13142,
+    "minified": 4357,
+    "gzipped": 1677
+  },
+  "dist/react-flip.esm.js": {
+    "bundled": 7401,
+    "minified": 3539,
+    "gzipped": 1308,
+    "treeshaked": {
+      "rollup": {
+        "code": 3295,
+        "import_statements": 183
+      },
+      "webpack": {
+        "code": 4370
+      }
+    }
+  }
+}
