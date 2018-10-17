@@ -15,7 +15,8 @@ import {
 export const convertMatrix3dArrayTo2dArray = matrix =>
   [0, 1, 4, 5, 12, 13].map(index => matrix[index])
 
-const getTransitions = ({node, prevRect, currentRect, opts}) => {
+const getTransitions = ({nodeInfo, prevRect, currentRect}) => {
+  const {opts, node} = nodeInfo
   const transforms = []
   const transitions = []
   if (opts.positionMode !== 'none') {
@@ -68,21 +69,24 @@ const getTransitions = ({node, prevRect, currentRect, opts}) => {
   return transitions
 }
 
-const flipNode = ({node, prevRect, currentRect, opts}, durationMs) => {
-  const transitions = getTransitions({node, prevRect, currentRect, opts})
+const flipNode = ({nodeInfo, prevRect, currentRect}, durationMs) => {
+  const transitions = getTransitions({nodeInfo, prevRect, currentRect})
+
+  const {node} = nodeInfo
 
   if (!transitions.length) return null
+  const trueTransitions = transitions.filter(({flipEndVal}) => flipEndVal)
+
+  if (nodeInfo.currentTransition) {
+    nodeInfo.currentTransition.clearTimeout()
+  }
+  if (trueTransitions.length) {
+    node.style.willChange = transitions.map(({prop}) => prop).join(',')
+  }
   node.style.transition = 'none'
   transitions.forEach(({flipStartVal, prop}) => {
     node.style[prop] = flipStartVal
   })
-  const trueTransitions = transitions.filter(({flipEndVal}) => flipEndVal)
-  const resetAfterFinish = transitions.filter(
-    ({resetTo}) => resetTo !== undefined,
-  )
-  if (trueTransitions.length) {
-    node.style.willChange = transitions.map(({prop}) => prop).join(',')
-  }
 
   return () => {
     if (trueTransitions) {
@@ -94,14 +98,19 @@ const flipNode = ({node, prevRect, currentRect, opts}, durationMs) => {
       })
     }
 
-    if (resetAfterFinish.length) {
-      return () => {
-        resetAfterFinish.forEach(({resetTo, prop}) => {
-          node.style[prop] = resetTo
+    const timeoutId = setTimeout(() => {
+      nodeInfo.currentTransition.resetStyles()
+      nodeInfo.currentTransition = null
+    }, durationMs)
+
+    nodeInfo.currentTransition = {
+      clearTimeout: () => clearTimeout(timeoutId),
+      resetStyles: () => {
+        node.style.transition = 'none'
+        transitions.forEach(({resetTo, prop}) => {
+          if (resetTo !== undefined) node.style[prop] = resetTo
         })
-      }
-    } else {
-      return null
+      },
     }
   }
 }
@@ -119,7 +128,7 @@ export default class ReactFlip extends React.Component {
 
   /*
   Structure: {
-    key: {key, node, handler, pendingResetTimeoutId}
+    key: {key, node, handler, currentTransition: {clearTimeout, resetStyles}}
   }
   */
   nodeInfoPerKey = {}
@@ -134,10 +143,11 @@ export default class ReactFlip extends React.Component {
       key,
       node: null,
       handler: node => {
+        if (newVal.currentTransition) newVal.currentTransition.clearTimeout()
         newVal.node = node
       },
       opts,
-      pendingResetTimeoutId: null,
+      currentTransition: null,
     }
     this.nodeInfoPerKey[key] = newVal
     return newVal
@@ -150,8 +160,14 @@ export default class ReactFlip extends React.Component {
   getSnapshotBeforeUpdate(prevProps) {
     if (prevProps.changeKey === this.props.changeKey) return null
     const boundsPerKey = {}
-    Object.values(this.nodeInfoPerKey).forEach(({key, node}) => {
+    const nodeInfos = Object.values(this.nodeInfoPerKey)
+    nodeInfos.forEach(({key, node}) => {
       if (node) boundsPerKey[key] = node.getBoundingClientRect()
+    })
+    nodeInfos.forEach(({currentTransition}) => {
+      if (currentTransition && currentTransition.resetStyles) {
+        currentTransition.resetStyles()
+      }
     })
     return boundsPerKey
   }
@@ -160,14 +176,12 @@ export default class ReactFlip extends React.Component {
     if (!snapshot) return
     const newPositions = []
     const {durationMs} = this.props
-    Object.values(this.nodeInfoPerKey).forEach(({key, node, opts}) => {
-      if (node && snapshot[key]) {
+    Object.values(this.nodeInfoPerKey).forEach(nodeInfo => {
+      if (nodeInfo.node && snapshot[nodeInfo.key]) {
         newPositions.push({
-          key,
-          node,
-          prevRect: snapshot[key],
-          currentRect: node.getBoundingClientRect(),
-          opts,
+          nodeInfo,
+          prevRect: snapshot[nodeInfo.key],
+          currentRect: nodeInfo.node.getBoundingClientRect(),
         })
       }
     })
@@ -177,22 +191,7 @@ export default class ReactFlip extends React.Component {
     if (nextFrameActions.length) {
       // asking for two animation frames since one frame is sometimes not enough to trigger transitions
       requestAnimationFrame(() =>
-        requestAnimationFrame(() =>
-          nextFrameActions.forEach(({key, cb}) => {
-            const keyInfo = this.nodeInfoPerKey[key]
-            if (keyInfo.pendingResetTimeoutId) {
-              clearTimeout(keyInfo.pendingResetTimeoutId)
-              keyInfo.pendingResetTimeoutId = null
-            }
-            const resetCb = cb()
-            if (resetCb) {
-              keyInfo.pendingResetTimeoutId = setTimeout(() => {
-                resetCb()
-                keyInfo.pendingResetTimeoutId = null
-              }, durationMs)
-            }
-          }),
-        ),
+        requestAnimationFrame(() => nextFrameActions.forEach(({cb}) => cb())),
       )
     }
   }
