@@ -1,4 +1,5 @@
 import React from 'react'
+import PropTypes from 'prop-types'
 import {
   translateX,
   translateY,
@@ -14,8 +15,7 @@ import {
 export const convertMatrix3dArrayTo2dArray = matrix =>
   [0, 1, 4, 5, 12, 13].map(index => matrix[index])
 
-// eslint-disable-next-line complexity
-const flipNode = ({node, prevRect, currentRect, opts}, durationMs) => {
+const getTransitions = ({node, prevRect, currentRect, opts}) => {
   const transforms = []
   const transitions = []
   if (opts.positionMode !== 'none') {
@@ -26,52 +26,37 @@ const flipNode = ({node, prevRect, currentRect, opts}, durationMs) => {
       transforms.push(translateY(prevRect.top - currentRect.top))
     }
   }
-  if (opts.scaleMode === 'non-transform') {
-    if (prevRect.width !== currentRect.width) {
-      transitions.push({
-        prop: 'width',
-        flipStartVal: `${prevRect.width}px`,
-        flipEndVal: `${currentRect.width}px`,
-        resetTo: node.style.width,
-      })
+  const dimensions = [
+    {dim: 'height', scaleFn: scaleY},
+    {dim: 'width', scaleFn: scaleX},
+  ]
+  dimensions.forEach(({dim, scaleFn}) => {
+    if (opts.scaleMode === 'non-transform') {
+      if (prevRect[dim] !== currentRect[dim]) {
+        transitions.push({
+          prop: dim,
+          flipStartVal: `${prevRect[dim]}px`,
+          flipEndVal: `${currentRect[dim]}px`,
+          resetTo: node.style[dim],
+        })
+      }
+    } else if (opts.scaleMode === 'immediate') {
+      if (prevRect[dim] !== currentRect[dim]) {
+        transitions.push({
+          prop: dim,
+          flipStartVal: `${currentRect[dim]}px`,
+          flipEndVal: null,
+          resetTo: node.style[dim],
+        })
+      }
+    } else if (opts.scaleMode === 'transform') {
+      if (prevRect[dim] !== currentRect[dim]) {
+        transforms.push(
+          scaleFn(Math.max(prevRect[dim], 1) / Math.max(currentRect[dim], 1)),
+        )
+      }
     }
-    if (prevRect.height !== currentRect.height) {
-      transitions.push({
-        prop: 'height',
-        flipStartVal: `${prevRect.height}px`,
-        flipEndVal: `${currentRect.height}px`,
-        resetTo: node.style.height,
-      })
-    }
-  } else if (opts.scaleMode === 'immediate') {
-    if (prevRect.height !== currentRect.height) {
-      transitions.push({
-        prop: 'height',
-        flipStartVal: `${currentRect.height}px`,
-        flipEndVal: null,
-        resetTo: node.style.height,
-      })
-    }
-    if (prevRect.width !== currentRect.width) {
-      transitions.push({
-        prop: 'width',
-        flipStartVal: `${currentRect.width}px`,
-        flipEndVal: null,
-        resetTo: node.style.width,
-      })
-    }
-  } else {
-    if (prevRect.width !== currentRect.width) {
-      transforms.push(
-        scaleX(Math.max(prevRect.width, 1) / Math.max(currentRect.width, 1)),
-      )
-    }
-    if (prevRect.height !== currentRect.height) {
-      transforms.push(
-        scaleY(Math.max(prevRect.height, 1) / Math.max(currentRect.height, 1)),
-      )
-    }
-  }
+  })
   if (transforms.length) {
     transitions.push({
       prop: 'transform',
@@ -80,6 +65,11 @@ const flipNode = ({node, prevRect, currentRect, opts}, durationMs) => {
     })
     node.style.transformOrigin = '0px 0px 0px'
   }
+  return transitions
+}
+
+const flipNode = ({node, prevRect, currentRect, opts}, durationMs) => {
+  const transitions = getTransitions({node, prevRect, currentRect, opts})
 
   if (!transitions.length) return null
   node.style.transition = 'none'
@@ -117,16 +107,21 @@ const flipNode = ({node, prevRect, currentRect, opts}, durationMs) => {
 }
 
 export default class ReactFlip extends React.Component {
-  /*
-  Structure: {
-    key: {key, node, handler, pendingResetTimeoutId}
+  static propTypes = {
+    durationMs: PropTypes.number,
+    changeKey: PropTypes.string.isRequired,
+    children: PropTypes.func.isRequired,
   }
-  */
 
   static defaultProps = {
     durationMs: 200,
   }
 
+  /*
+  Structure: {
+    key: {key, node, handler, pendingResetTimeoutId}
+  }
+  */
   nodeInfoPerKey = {}
 
   getOrCreateHandlerForKey = (key, opts) => {
