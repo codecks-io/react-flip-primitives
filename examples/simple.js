@@ -2,12 +2,6 @@ import React from 'react'
 import {Set} from 'react-powerplug'
 import ReactFlip from '../src/index'
 
-const boxStyle = {
-  backgroundColor: 'rgba(0,0,0,0.1)',
-  boxShadow: '0 5px 30px -10px rgba(0,0,0,0.2)',
-  overflow: 'hidden',
-}
-
 const Text = () => (
   <div>
     <p>
