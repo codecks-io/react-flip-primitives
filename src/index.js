@@ -78,17 +78,22 @@ const flipNode = ({nodeInfo, prevRect, currentRect}, durationMs) => {
   if (nodeInfo.currentTransition) {
     nodeInfo.currentTransition.clearTimeout()
   }
-  if (trueTransitions.length) {
+  if (nodeInfo.opts.setWillChange && trueTransitions.length) {
     nodeInfo.node.style.willChange = transitions.map(({prop}) => prop).join(',')
   }
-  nodeInfo.node.style.transition = 'none'
+  nodeInfo.node.style.transition = nodeInfo.opts.transitionProps
+    .map(prop => `${prop} ${durationMs}ms ease-out`)
+    .join(', ')
   transitions.forEach(({flipStartVal, prop}) => {
     nodeInfo.node.style[prop] = flipStartVal
   })
 
   return () => {
-    if (trueTransitions) {
-      nodeInfo.node.style.transition = trueTransitions
+    if (trueTransitions.length || nodeInfo.opts.transitionProps.length) {
+      nodeInfo.node.style.transition = [
+        ...trueTransitions,
+        ...nodeInfo.opts.transitionProps.map(prop => ({prop})),
+      ]
         .map(({prop}) => `${prop} ${durationMs}ms ease-out`)
         .join(',')
       trueTransitions.forEach(({flipEndVal, prop}) => {
@@ -107,7 +112,9 @@ const flipNode = ({nodeInfo, prevRect, currentRect}, durationMs) => {
     nodeInfo.currentTransition = {
       clearTimeout: () => clearTimeout(timeoutId),
       resetStyles: () => {
-        nodeInfo.node.style.transition = 'none'
+        nodeInfo.node.style.transition = nodeInfo.opts.transitionProps
+          .map(prop => `${prop} ${durationMs}ms ease-out`)
+          .join(', ')
         transitions.forEach(({resetTo, prop}) => {
           if (resetTo !== undefined) nodeInfo.node.style[prop] = resetTo
         })
@@ -116,11 +123,20 @@ const flipNode = ({nodeInfo, prevRect, currentRect}, durationMs) => {
   }
 }
 
+const defaultHandlerOpts = {
+  positionMode: 'transform',
+  scaleMode: 'transform',
+  enterStyle: null,
+  transitionProps: [],
+  setWillChange: false,
+}
+
 export default class ReactFlip extends React.Component {
   static propTypes = {
     durationMs: PropTypes.number,
     changeKey: PropTypes.string.isRequired,
     children: PropTypes.func.isRequired,
+    noAnimationOnMount: PropTypes.bool,
   }
 
   static defaultProps = {
@@ -137,8 +153,10 @@ export default class ReactFlip extends React.Component {
   }
   */
   nodeInfoPerKey = {}
+  measuredNodes = {} // will be set to null on componentDidMount
 
-  getOrCreateHandlerForKey = (key, opts = {}) => {
+  getOrCreateHandlerForKey = (key, userOpts) => {
+    const opts = {...defaultHandlerOpts, ...userOpts}
     const existing = this.nodeInfoPerKey[key]
     if (existing) {
       existing.opts = opts
@@ -150,6 +168,33 @@ export default class ReactFlip extends React.Component {
       handler: node => {
         if (newVal.currentTransition) newVal.currentTransition.clearTimeout()
         newVal.node = node
+        if (node) {
+          if (process.env.NODE_ENV !== 'production') {
+            const cStyle = getComputedStyle(node, null)
+            const existingTransition =
+              cStyle.getPropertyValue('transition') || 'none'
+            if (!existingTransition.match(/^(none|\S+\s+0s\s+\S+\s+0s\b)/)) {
+              // eslint-disable-next-line no-console
+              console.warn(
+                `Found user-defined transition "${existingTransition}" on\b`,
+                node,
+                '\nThis will be overwritten by react-flip-primitives. Use `registerFlip(key, {transitionProps: ["opacity" , ...]})` instead!',
+              )
+            }
+          }
+
+          if (opts.enterStyle && this.measuredNodes) {
+            const orgStyle = {}
+            Object.entries(opts.enterStyle).forEach(([prop, val]) => {
+              orgStyle[prop] = node.style[prop]
+              node.style[prop] = typeof val === 'number' ? `${val}px` : val
+            })
+            this.measuredNodes[key] = node.getBoundingClientRect()
+            Object.entries(orgStyle).forEach(([prop, val]) => {
+              node.style[prop] = val
+            })
+          }
+        }
       },
       opts,
       currentTransition: null,
@@ -162,12 +207,15 @@ export default class ReactFlip extends React.Component {
     return this.getOrCreateHandlerForKey(key, opts)
   }
 
+  // This method doesn't return a snapshot but populates `this.measuredNodes`
+  // This is made so that new nodes that enter between `getSnapshotBeforeUpdate`
+  // and `componentDidUpdate` can also add their measurements
   getSnapshotBeforeUpdate(prevProps) {
     if (prevProps.changeKey === this.props.changeKey) return null
-    const boundsPerKey = {}
+    this.measuredNodes = {}
     const nodeInfos = Object.values(this.nodeInfoPerKey)
     nodeInfos.forEach(({key, node}) => {
-      if (node) boundsPerKey[key] = node.getBoundingClientRect()
+      if (node) this.measuredNodes[key] = node.getBoundingClientRect()
     })
     nodeInfos.forEach(nodeInfo => {
       const {node, currentTransition, leaving} = nodeInfo
@@ -175,11 +223,12 @@ export default class ReactFlip extends React.Component {
         currentTransition.resetStyles()
       }
       if (leaving) {
+        // if we haven't processed the leaving flag yet, set the leaving style
         if (!leaving.beforeLeavingStyles) {
           leaving.beforeLeavingStyles = {}
           Object.entries(leaving.finalStyle).forEach(([prop, val]) => {
             leaving.beforeLeavingStyles[prop] = node.style[prop]
-            node.style[prop] = val
+            node.style[prop] = typeof val === 'number' ? `${val}px` : val
           })
         }
         if (leaving.abort) {
@@ -190,31 +239,41 @@ export default class ReactFlip extends React.Component {
         }
       }
     })
-    return boundsPerKey
+    return null
   }
 
-  componentDidUpdate(prevProps, prevState, snapshot) {
-    if (!snapshot) return
-    const newPositions = []
-    const {durationMs} = this.props
-    Object.values(this.nodeInfoPerKey).forEach(nodeInfo => {
-      if (nodeInfo.node && snapshot[nodeInfo.key]) {
-        newPositions.push({
-          nodeInfo,
-          prevRect: snapshot[nodeInfo.key],
-          currentRect: nodeInfo.node.getBoundingClientRect(),
-        })
+  performUpdate() {
+    if (this.measuredNodes) {
+      const newPositions = []
+      const {durationMs} = this.props
+      Object.values(this.nodeInfoPerKey).forEach(nodeInfo => {
+        if (nodeInfo.node && this.measuredNodes[nodeInfo.key]) {
+          newPositions.push({
+            nodeInfo,
+            prevRect: this.measuredNodes[nodeInfo.key],
+            currentRect: nodeInfo.node.getBoundingClientRect(),
+          })
+        }
+      })
+      const nextFrameActions = newPositions
+        .map(p => ({cb: flipNode(p, durationMs), key: p.key}))
+        .filter(({cb}) => cb)
+      if (nextFrameActions.length) {
+        // asking for two animation frames since one frame is sometimes not enough to trigger transitions
+        requestAnimationFrame(() =>
+          requestAnimationFrame(() => nextFrameActions.forEach(({cb}) => cb())),
+        )
       }
-    })
-    const nextFrameActions = newPositions
-      .map(p => ({cb: flipNode(p, durationMs), key: p.key}))
-      .filter(({cb}) => cb)
-    if (nextFrameActions.length) {
-      // asking for two animation frames since one frame is sometimes not enough to trigger transitions
-      requestAnimationFrame(() =>
-        requestAnimationFrame(() => nextFrameActions.forEach(({cb}) => cb())),
-      )
     }
+    this.measuredNodes = null
+  }
+
+  componentDidMount() {
+    if (!this.props.noAnimationOnMount) this.performUpdate()
+  }
+
+  componentDidUpdate() {
+    this.performUpdate()
   }
 
   render() {
