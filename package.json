@@ -19,6 +19,7 @@
   "devDependencies": {
     "@babel/plugin-proposal-object-rest-spread": "^7.0.0",
     "docz": "^0.12.5",
+    "docz-plugin-css": "^0.11.0",
     "kcd-scripts": "^0.45.0",
     "react-powerplug": "^1.0.0-rc.1"
   },
