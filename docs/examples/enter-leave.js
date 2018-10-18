@@ -1,6 +1,6 @@
 import React from 'react'
 import {Set} from 'react-powerplug'
-import ReactFlip, {OnLeave} from '../../src/index'
+import ReactFlip, {LeaveEnter} from '../../src/index'
 import Text from './Text'
 
 const ExpandText = ({
@@ -11,24 +11,31 @@ const ExpandText = ({
   isActive,
   onClick,
 }) => (
-  <div ref={registerFlip(`container-${flipKey}`, {scaleMode: 'immediate'})}>
+  <div>
     <div>{preview}</div>
-    <OnLeave leaveStyle={{height: 1}} registerFlip={registerFlip}>
-      {onLeaveRef =>
-        !isActive && (
+    <LeaveEnter
+      registerFlip={registerFlip}
+      keysAndData={isActive ? [{key: flipKey, data: children}] : []}
+      enterPositionStyle={{height: 1}}
+      enterDecorationStyle={{opacity: 0}}
+      leaveStyle={{height: 1, opacity: 0}}
+    >
+      {(keysAndData, registerLeaveEnter) =>
+        keysAndData.map(({key, data}) => (
           <div
-            ref={onLeaveRef(`preview-${flipKey}`, {
+            key={key}
+            ref={registerLeaveEnter(key, {
               scaleMode: 'non-transform',
               positionMode: 'none',
-              enterStyle: {height: 1},
+              transitionProps: ['opacity'],
             })}
             style={{overflow: 'hidden'}}
           >
-            {children}
+            {data}
           </div>
-        )
+        ))
       }
-    </OnLeave>
+    </LeaveEnter>
     <button onClick={onClick}>{isActive ? 'collapse' : 'expand'}</button>
   </div>
 )
@@ -52,7 +59,7 @@ const EnterLeave = () => (
             >
               <Text />
             </ExpandText>
-            <ExpandText
+            {/* <ExpandText
               isActive={has('text2')}
               onClick={() => (has('text2') ? remove('text2') : add('text2'))}
               flipKey="text2"
@@ -60,7 +67,7 @@ const EnterLeave = () => (
               preview={<h2>Enter Leave 2</h2>}
             >
               <Text />
-            </ExpandText>
+            </ExpandText> */}
           </React.Fragment>
         )}
       </ReactFlip>

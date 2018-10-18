@@ -8,6 +8,7 @@ import {
   multiply,
   toString,
 } from 'rematrix'
+import mergeDiff from './mergeDiff'
 
 // 3d transforms were causing weird issues in chrome,
 // especially when opacity was also being tweened,
@@ -129,7 +130,6 @@ const flipNode = (
 const defaultHandlerOpts = {
   positionMode: 'transform',
   scaleMode: 'transform',
-  enterStyle: null,
   transitionProps: [],
   setWillChange: false,
 }
@@ -140,7 +140,6 @@ export default class ReactFlip extends React.Component {
     timingFunction: PropTypes.string,
     changeKey: PropTypes.string.isRequired,
     children: PropTypes.func.isRequired,
-    noAnimationOnMount: PropTypes.bool,
   }
 
   static defaultProps = {
@@ -153,12 +152,11 @@ export default class ReactFlip extends React.Component {
     key: {
       key, node, handler,
       currentTransition?: {clearTimeout, resetStyles},
-      leaving?: {finalStyle, onDone, beforeLeavingStyles}
+      leaving?: {onDone, beforeLeavingStyles, onDone}
     }
   }
   */
   nodeInfoPerKey = {}
-  measuredNodes = {} // will be set to null on componentDidMount
 
   getOrCreateHandlerForKey = (key, userOpts) => {
     const opts = {...defaultHandlerOpts, ...userOpts}
@@ -187,18 +185,6 @@ export default class ReactFlip extends React.Component {
               )
             }
           }
-
-          if (opts.enterStyle && this.measuredNodes) {
-            const orgStyle = {}
-            Object.entries(opts.enterStyle).forEach(([prop, val]) => {
-              orgStyle[prop] = node.style[prop]
-              node.style[prop] = typeof val === 'number' ? `${val}px` : val
-            })
-            this.measuredNodes[key] = node.getBoundingClientRect()
-            Object.entries(orgStyle).forEach(([prop, val]) => {
-              node.style[prop] = val
-            })
-          }
         }
       },
       opts,
@@ -212,73 +198,144 @@ export default class ReactFlip extends React.Component {
     return this.getOrCreateHandlerForKey(key, opts)
   }
 
-  // This method doesn't return a snapshot but populates `this.measuredNodes`
-  // This is made so that new nodes that enter between `getSnapshotBeforeUpdate`
-  // and `componentDidUpdate` can also add their measurements
   getSnapshotBeforeUpdate(prevProps) {
     if (prevProps.changeKey === this.props.changeKey) return null
-    this.measuredNodes = {}
+    const measuredNodes = {}
     const nodeInfos = Object.values(this.nodeInfoPerKey)
     nodeInfos.forEach(({key, node}) => {
-      if (node) this.measuredNodes[key] = node.getBoundingClientRect()
+      if (node) measuredNodes[key] = node.getBoundingClientRect()
     })
     nodeInfos.forEach(nodeInfo => {
-      const {node, currentTransition, leaving} = nodeInfo
-      if (currentTransition) {
-        currentTransition.resetStyles()
+      if (nodeInfo.currentTransition && nodeInfo.node) {
+        nodeInfo.currentTransition.resetStyles()
       }
-      if (leaving) {
-        // if we haven't processed the leaving flag yet, set the leaving style
-        if (!leaving.beforeLeavingStyles) {
-          leaving.beforeLeavingStyles = {}
-          Object.entries(leaving.finalStyle).forEach(([prop, val]) => {
-            leaving.beforeLeavingStyles[prop] = node.style[prop]
-            node.style[prop] = typeof val === 'number' ? `${val}px` : val
-          })
-        }
-        if (leaving.abort) {
-          Object.entries(leaving.beforeLeavingStyles).forEach(([prop, val]) => {
-            node.style[prop] = val
-          })
-          nodeInfo.leaving = null
+      if (nodeInfo.opts.isLeaving && !nodeInfo.leaving) {
+        const beforeLeavingStyles = {}
+        Object.entries(nodeInfo.opts.isLeaving.finalStyle).forEach(
+          ([prop, val]) => {
+            beforeLeavingStyles[prop] = nodeInfo.node.style[prop]
+            nodeInfo.node.style[prop] =
+              prop !== 'opacity' && typeof val === 'number' ? `${val}px` : val
+          },
+        )
+        nodeInfo.leaving = {
+          beforeLeavingStyles,
+          onDone: () => {
+            nodeInfo.opts.isLeaving.onDone()
+            nodeInfo.leaving = null
+          },
+          abortLeaving: () => {
+            Object.entries(nodeInfo.leaving.beforeLeavingStyles).forEach(
+              ([prop, val]) => {
+                nodeInfo.node.style[prop] = val
+              },
+            )
+            nodeInfo.leaving = null
+          },
         }
       }
     })
-    return null
+    return measuredNodes
   }
 
-  performUpdate() {
-    if (this.measuredNodes) {
-      const newPositions = []
-      const {durationMs, timingFunction} = this.props
-      Object.values(this.nodeInfoPerKey).forEach(nodeInfo => {
-        if (nodeInfo.node && this.measuredNodes[nodeInfo.key]) {
-          newPositions.push({
-            nodeInfo,
-            prevRect: this.measuredNodes[nodeInfo.key],
-            currentRect: nodeInfo.node.getBoundingClientRect(),
-          })
+  performUpdate(measuredNodes) {
+    const newPositions = []
+    const {durationMs, timingFunction} = this.props
+    const nodeInfos = Object.values(this.nodeInfoPerKey)
+
+    // first look for entering nodes and measure them
+    const enteringNodes = nodeInfos.filter(nodeInfo => {
+      if (nodeInfo.opts.isEnteringWithStyles) {
+        if (measuredNodes[nodeInfo.key]) {
+          // eslint-disable-next-line no-console
+          console.warn(
+            `'${
+              nodeInfo.key
+            }' is set as 'isEntering' even though it's measured already!?`,
+          )
+          return false
+        }
+        return true
+      }
+      return false
+    })
+    const orgEnterDecorationStylesFns = {}
+    if (enteringNodes.length) {
+      const orgEnterPositionStyles = {}
+      enteringNodes.forEach(({node, opts, key}) => {
+        orgEnterPositionStyles[key] = {}
+        Object.entries(opts.isEnteringWithStyles.positionStyle).forEach(
+          ([prop, val]) => {
+            orgEnterPositionStyles[key][prop] = node.style[prop]
+            node.style[prop] = typeof val === 'number' ? `${val}px` : val
+          },
+        )
+        if (opts.isEnteringWithStyles.decorationStyle) {
+          const orgEnterDecorationStyles = {}
+          Object.entries(opts.isEnteringWithStyles.decorationStyle).forEach(
+            ([prop, val]) => {
+              orgEnterDecorationStyles[prop] = node.style[prop]
+              node.style[prop] = val
+            },
+          )
+          orgEnterDecorationStylesFns[key] = () => {
+            Object.entries(orgEnterDecorationStyles).forEach(([prop, val]) => {
+              node.style[prop] = val
+            })
+          }
         }
       })
-      const nextFrameActions = newPositions
-        .map(p => ({cb: flipNode(p, {durationMs, timingFunction}), key: p.key}))
-        .filter(({cb}) => cb)
-      if (nextFrameActions.length) {
-        // asking for two animation frames since one frame is sometimes not enough to trigger transitions
-        requestAnimationFrame(() =>
-          requestAnimationFrame(() => nextFrameActions.forEach(({cb}) => cb())),
-        )
-      }
+      enteringNodes.forEach(({node, key}) => {
+        measuredNodes[key] = node.getBoundingClientRect()
+      })
+      enteringNodes.forEach(({node, key}) => {
+        Object.entries(orgEnterPositionStyles[key]).forEach(([prop, val]) => {
+          node.style[prop] = val
+        })
+      })
     }
-    this.measuredNodes = null
+    nodeInfos.forEach(({leaving, opts}) => {
+      if (leaving && !opts.isLeaving) {
+        leaving.abortLeaving()
+      }
+    })
+    nodeInfos.forEach(nodeInfo => {
+      if (nodeInfo.node && measuredNodes[nodeInfo.key]) {
+        newPositions.push({
+          nodeInfo,
+          prevRect: measuredNodes[nodeInfo.key],
+          currentRect: nodeInfo.node.getBoundingClientRect(),
+        })
+      }
+    })
+    const nextFrameActions = newPositions
+      .map(p => ({
+        cb: flipNode(p, {durationMs, timingFunction}),
+        key: p.nodeInfo.key,
+      }))
+      .filter(({cb}) => cb)
+    if (nextFrameActions.length) {
+      // asking for two animation frames since one frame is sometimes not enough to trigger transitions
+      requestAnimationFrame(() =>
+        requestAnimationFrame(() =>
+          nextFrameActions.forEach(({cb, key}) => {
+            cb()
+            if (orgEnterDecorationStylesFns[key]) {
+              orgEnterDecorationStylesFns[key]()
+            }
+          }),
+        ),
+      )
+    }
   }
 
   componentDidMount() {
-    if (!this.props.noAnimationOnMount) this.performUpdate()
+    // this.performUpdate({})
   }
 
-  componentDidUpdate() {
-    this.performUpdate()
+  componentDidUpdate(prevProps, prevState, measuredNodes) {
+    if (prevProps.changeKey === this.props.changeKey) return
+    this.performUpdate(measuredNodes)
   }
 
   render() {
@@ -286,40 +343,83 @@ export default class ReactFlip extends React.Component {
   }
 }
 
-export class OnLeave extends React.Component {
+export class LeaveEnter extends React.Component {
   static propTypes = {
-    leaveStyle: PropTypes.object.isRequired,
+    keysAndData: PropTypes.arrayOf(
+      PropTypes.shape({
+        key: PropTypes.string.isRequired,
+        data: PropTypes.any,
+      }),
+    ).isRequired,
     registerFlip: PropTypes.func.isRequired,
     children: PropTypes.func.isRequired,
+    leaveStyle: PropTypes.object,
+    enterPositionStyle: PropTypes.object,
+    enterDecorationStyle: PropTypes.object,
   }
 
-  lastNode = null
+  static getDerivedStateFromProps(props, state) {
+    const {
+      keysAndData,
+      leaveStyle,
+      enterPositionStyle,
+      enterDecorationStyle,
+    } = props
+    const oldKeysAndData = state.keysAndDataToRender
+    const enteringKeys = {}
+    const leavingKeys = {}
+    const keysAndDataToRender = mergeDiff(
+      oldKeysAndData,
+      keysAndData,
+      (oldKeyIndex, content) => {
+        if (!props.leaveStyle) return null
+        leavingKeys[content.key] = leaveStyle
+        return content
+      },
+      (newKeyIndex, content) => {
+        enteringKeys[content.key] = {
+          positionStyle: enterPositionStyle,
+          decorationStyle: enterDecorationStyle,
+        }
+      },
+    )
+    return {keysAndDataToRender, leavingKeys, enteringKeys}
+  }
+
+  constructor(props) {
+    super(props)
+    this.state = {
+      keysAndDataToRender: [],
+      enteringKeys: {},
+      leavingKeys: {},
+    }
+    this.nodeInfoPerKey = {}
+  }
 
   registerNode = (key, opts) => {
     const {registerFlip} = this.props
-    this.info = registerFlip(key, {...opts, _passInfo: true})
-    return this.info.handler
+    const {enteringKeys, leavingKeys} = this.state
+    const passedOpts = {
+      ...opts,
+      _passInfo: true,
+      isEnteringWithStyles: enteringKeys[key],
+      isLeaving: leavingKeys[key] && {
+        finalStyle: leavingKeys[key],
+        onDone: () =>
+          this.setState(({keysAndDataToRender}) => ({
+            keysAndDataToRender: keysAndDataToRender.filter(
+              knd => knd.key !== key,
+            ),
+          })),
+      },
+    }
+    const nodeInfo = registerFlip(key, passedOpts)
+    this.nodeInfoPerKey[key] = nodeInfo
+    return nodeInfo.handler
   }
-
   render() {
-    const {children, leaveStyle} = this.props
-    const currentNode = children(this.registerNode)
-    if (this.info && this.lastNode && !currentNode && !this.info.leaving) {
-      this.info.leaving = {
-        abort: false,
-        beforeLeavingStyles: null,
-        finalStyle: leaveStyle,
-        onDone: () => {
-          this.lastNode = null
-          this.info.leaving = null
-          this.forceUpdate()
-        },
-      }
-    }
-    if (this.info && this.info.leaving && currentNode) {
-      this.info.leaving.abort = true
-    }
-    this.lastNode = currentNode || this.lastNode
-    return this.lastNode
+    const {keysAndDataToRender} = this.state
+    const {children} = this.props
+    return children(keysAndDataToRender, this.registerNode)
   }
 }
