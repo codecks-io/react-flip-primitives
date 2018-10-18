@@ -72,8 +72,6 @@ const getTransitions = ({nodeInfo, prevRect, currentRect}) => {
 const flipNode = ({nodeInfo, prevRect, currentRect}, durationMs) => {
   const transitions = getTransitions({nodeInfo, prevRect, currentRect})
 
-  const {node} = nodeInfo
-
   if (!transitions.length) return null
   const trueTransitions = transitions.filter(({flipEndVal}) => flipEndVal)
 
@@ -81,34 +79,37 @@ const flipNode = ({nodeInfo, prevRect, currentRect}, durationMs) => {
     nodeInfo.currentTransition.clearTimeout()
   }
   if (trueTransitions.length) {
-    node.style.willChange = transitions.map(({prop}) => prop).join(',')
+    nodeInfo.node.style.willChange = transitions.map(({prop}) => prop).join(',')
   }
-  node.style.transition = 'none'
+  nodeInfo.node.style.transition = 'none'
   transitions.forEach(({flipStartVal, prop}) => {
-    node.style[prop] = flipStartVal
+    nodeInfo.node.style[prop] = flipStartVal
   })
 
   return () => {
     if (trueTransitions) {
-      node.style.transition = trueTransitions
+      nodeInfo.node.style.transition = trueTransitions
         .map(({prop}) => `${prop} ${durationMs}ms ease-out`)
         .join(',')
       trueTransitions.forEach(({flipEndVal, prop}) => {
-        node.style[prop] = flipEndVal
+        nodeInfo.node.style[prop] = flipEndVal
       })
     }
 
     const timeoutId = setTimeout(() => {
       nodeInfo.currentTransition.resetStyles()
+      if (nodeInfo.leaving) {
+        nodeInfo.leaving.onDone()
+      }
       nodeInfo.currentTransition = null
     }, durationMs)
 
     nodeInfo.currentTransition = {
       clearTimeout: () => clearTimeout(timeoutId),
       resetStyles: () => {
-        node.style.transition = 'none'
+        nodeInfo.node.style.transition = 'none'
         transitions.forEach(({resetTo, prop}) => {
-          if (resetTo !== undefined) node.style[prop] = resetTo
+          if (resetTo !== undefined) nodeInfo.node.style[prop] = resetTo
         })
       },
     }
@@ -128,16 +129,20 @@ export default class ReactFlip extends React.Component {
 
   /*
   Structure: {
-    key: {key, node, handler, currentTransition: {clearTimeout, resetStyles}}
+    key: {
+      key, node, handler,
+      currentTransition?: {clearTimeout, resetStyles},
+      leaving?: {finalStyle, onDone, beforeLeavingStyles}
+    }
   }
   */
   nodeInfoPerKey = {}
 
-  getOrCreateHandlerForKey = (key, opts) => {
+  getOrCreateHandlerForKey = (key, opts = {}) => {
     const existing = this.nodeInfoPerKey[key]
     if (existing) {
       existing.opts = opts
-      return existing
+      return opts._passInfo ? existing : existing.handler
     }
     const newVal = {
       key,
@@ -150,11 +155,11 @@ export default class ReactFlip extends React.Component {
       currentTransition: null,
     }
     this.nodeInfoPerKey[key] = newVal
-    return newVal
+    return opts._passInfo ? newVal : newVal.handler
   }
 
   setStyle = (key, opts = {}) => {
-    return this.getOrCreateHandlerForKey(key, opts).handler
+    return this.getOrCreateHandlerForKey(key, opts)
   }
 
   getSnapshotBeforeUpdate(prevProps) {
@@ -164,9 +169,25 @@ export default class ReactFlip extends React.Component {
     nodeInfos.forEach(({key, node}) => {
       if (node) boundsPerKey[key] = node.getBoundingClientRect()
     })
-    nodeInfos.forEach(({currentTransition}) => {
-      if (currentTransition && currentTransition.resetStyles) {
+    nodeInfos.forEach(nodeInfo => {
+      const {node, currentTransition, leaving} = nodeInfo
+      if (currentTransition) {
         currentTransition.resetStyles()
+      }
+      if (leaving) {
+        if (!leaving.beforeLeavingStyles) {
+          leaving.beforeLeavingStyles = {}
+          Object.entries(leaving.finalStyle).forEach(([prop, val]) => {
+            leaving.beforeLeavingStyles[prop] = node.style[prop]
+            node.style[prop] = val
+          })
+        }
+        if (leaving.abort) {
+          Object.entries(leaving.beforeLeavingStyles).forEach(([prop, val]) => {
+            node.style[prop] = val
+          })
+          nodeInfo.leaving = null
+        }
       }
     })
     return boundsPerKey
@@ -198,5 +219,43 @@ export default class ReactFlip extends React.Component {
 
   render() {
     return this.props.children(this.setStyle)
+  }
+}
+
+export class OnLeave extends React.Component {
+  static propTypes = {
+    leaveStyle: PropTypes.object.isRequired,
+    registerFlip: PropTypes.func.isRequired,
+    children: PropTypes.func.isRequired,
+  }
+
+  lastNode = null
+
+  registerNode = (key, opts) => {
+    const {registerFlip} = this.props
+    this.info = registerFlip(key, {...opts, _passInfo: true})
+    return this.info.handler
+  }
+
+  render() {
+    const {children, leaveStyle} = this.props
+    const currentNode = children(this.registerNode)
+    if (this.info && this.lastNode && !currentNode && !this.info.leaving) {
+      this.info.leaving = {
+        abort: false,
+        beforeLeavingStyles: null,
+        finalStyle: leaveStyle,
+        onDone: () => {
+          this.lastNode = null
+          this.info.leaving = null
+          this.forceUpdate()
+        },
+      }
+    }
+    if (this.info && this.info.leaving && currentNode) {
+      this.info.leaving.abort = true
+    }
+    this.lastNode = currentNode || this.lastNode
+    return this.lastNode
   }
 }
