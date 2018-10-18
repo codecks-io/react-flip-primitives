@@ -1,5 +1,6 @@
 import React from 'react'
 import {Set} from 'react-powerplug'
+import PropTypes from 'prop-types'
 import ReactFlip, {LeaveEnter} from '../../src/index'
 import Text from './Text'
 
@@ -11,7 +12,7 @@ const ExpandText = ({
   isActive,
   onClick,
 }) => (
-  <div>
+  <div ref={registerFlip(`container-${flipKey}`, {scaleMode: 'immediate'})}>
     <div>{preview}</div>
     <LeaveEnter
       registerFlip={registerFlip}
@@ -40,6 +41,15 @@ const ExpandText = ({
   </div>
 )
 
+ExpandText.propTypes = {
+  flipKey: PropTypes.any,
+  registerFlip: PropTypes.any,
+  preview: PropTypes.any,
+  children: PropTypes.any,
+  isActive: PropTypes.any,
+  onClick: PropTypes.any,
+}
+
 const EnterLeave = () => (
   <Set>
     {({values, add, remove, has}) => (
@@ -59,7 +69,7 @@ const EnterLeave = () => (
             >
               <Text />
             </ExpandText>
-            {/* <ExpandText
+            <ExpandText
               isActive={has('text2')}
               onClick={() => (has('text2') ? remove('text2') : add('text2'))}
               flipKey="text2"
@@ -67,7 +77,7 @@ const EnterLeave = () => (
               preview={<h2>Enter Leave 2</h2>}
             >
               <Text />
-            </ExpandText> */}
+            </ExpandText>
           </React.Fragment>
         )}
       </ReactFlip>

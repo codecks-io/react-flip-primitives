@@ -1,5 +1,6 @@
 import React from 'react'
 import {Set} from 'react-powerplug'
+import PropTypes from 'prop-types'
 import ReactFlip from '../../src/index'
 import styles from '../styles.module.css'
 import Text from './Text'
@@ -35,6 +36,15 @@ const ExpandText = ({
     <button onClick={onClick}>{isActive ? 'collapse' : 'expand'}</button>
   </div>
 )
+
+ExpandText.propTypes = {
+  flipKey: PropTypes.any,
+  registerFlip: PropTypes.any,
+  preview: PropTypes.any,
+  children: PropTypes.any,
+  isActive: PropTypes.any,
+  onClick: PropTypes.any,
+}
 
 const Simple = () => (
   <Set>

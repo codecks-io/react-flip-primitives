@@ -75,8 +75,6 @@ const flipNode = (
   {durationMs, timingFunction},
 ) => {
   const transitions = getTransitions({nodeInfo, prevRect, currentRect})
-
-  if (!transitions.length) return null
   const trueTransitions = transitions.filter(({flipEndVal}) => flipEndVal)
 
   if (nodeInfo.currentTransition) {
@@ -184,6 +182,17 @@ export default class ReactFlip extends React.Component {
                 '\nThis will be overwritten by react-flip-primitives. Use `registerFlip(key, {transitionProps: ["opacity" , ...]})` instead!',
               )
             }
+            if (opts.transitionProps.length) {
+              node.style.transition = opts.transitionProps
+                .map(prop => ({prop}))
+                .map(
+                  ({prop}) =>
+                    `${prop} ${this.props.durationMs}ms ${
+                      this.props.timingFunction
+                    }`,
+                )
+                .join(',')
+            }
           }
         }
       },
@@ -223,6 +232,7 @@ export default class ReactFlip extends React.Component {
           onDone: () => {
             nodeInfo.opts.isLeaving.onDone()
             nodeInfo.leaving = null
+            delete this.nodeInfoPerKey[nodeInfo.key]
           },
           abortLeaving: () => {
             Object.entries(nodeInfo.leaving.beforeLeavingStyles).forEach(
