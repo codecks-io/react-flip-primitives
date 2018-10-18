@@ -69,7 +69,10 @@ const getTransitions = ({nodeInfo, prevRect, currentRect}) => {
   return transitions
 }
 
-const flipNode = ({nodeInfo, prevRect, currentRect}, durationMs) => {
+const flipNode = (
+  {nodeInfo, prevRect, currentRect},
+  {durationMs, timingFunction},
+) => {
   const transitions = getTransitions({nodeInfo, prevRect, currentRect})
 
   if (!transitions.length) return null
@@ -82,7 +85,7 @@ const flipNode = ({nodeInfo, prevRect, currentRect}, durationMs) => {
     nodeInfo.node.style.willChange = transitions.map(({prop}) => prop).join(',')
   }
   nodeInfo.node.style.transition = nodeInfo.opts.transitionProps
-    .map(prop => `${prop} ${durationMs}ms ease-out`)
+    .map(prop => `${prop} ${durationMs}ms ${timingFunction}`)
     .join(', ')
   transitions.forEach(({flipStartVal, prop}) => {
     nodeInfo.node.style[prop] = flipStartVal
@@ -94,7 +97,7 @@ const flipNode = ({nodeInfo, prevRect, currentRect}, durationMs) => {
         ...trueTransitions,
         ...nodeInfo.opts.transitionProps.map(prop => ({prop})),
       ]
-        .map(({prop}) => `${prop} ${durationMs}ms ease-out`)
+        .map(({prop}) => `${prop} ${durationMs}ms ${timingFunction}`)
         .join(',')
       trueTransitions.forEach(({flipEndVal, prop}) => {
         nodeInfo.node.style[prop] = flipEndVal
@@ -113,7 +116,7 @@ const flipNode = ({nodeInfo, prevRect, currentRect}, durationMs) => {
       clearTimeout: () => clearTimeout(timeoutId),
       resetStyles: () => {
         nodeInfo.node.style.transition = nodeInfo.opts.transitionProps
-          .map(prop => `${prop} ${durationMs}ms ease-out`)
+          .map(prop => `${prop} ${durationMs}ms ${timingFunction}`)
           .join(', ')
         transitions.forEach(({resetTo, prop}) => {
           if (resetTo !== undefined) nodeInfo.node.style[prop] = resetTo
@@ -134,6 +137,7 @@ const defaultHandlerOpts = {
 export default class ReactFlip extends React.Component {
   static propTypes = {
     durationMs: PropTypes.number,
+    timingFunction: PropTypes.string,
     changeKey: PropTypes.string.isRequired,
     children: PropTypes.func.isRequired,
     noAnimationOnMount: PropTypes.bool,
@@ -141,6 +145,7 @@ export default class ReactFlip extends React.Component {
 
   static defaultProps = {
     durationMs: 200,
+    timingFunction: 'ease',
   }
 
   /*
@@ -245,7 +250,7 @@ export default class ReactFlip extends React.Component {
   performUpdate() {
     if (this.measuredNodes) {
       const newPositions = []
-      const {durationMs} = this.props
+      const {durationMs, timingFunction} = this.props
       Object.values(this.nodeInfoPerKey).forEach(nodeInfo => {
         if (nodeInfo.node && this.measuredNodes[nodeInfo.key]) {
           newPositions.push({
@@ -256,7 +261,7 @@ export default class ReactFlip extends React.Component {
         }
       })
       const nextFrameActions = newPositions
-        .map(p => ({cb: flipNode(p, durationMs), key: p.key}))
+        .map(p => ({cb: flipNode(p, {durationMs, timingFunction}), key: p.key}))
         .filter(({cb}) => cb)
       if (nextFrameActions.length) {
         // asking for two animation frames since one frame is sometimes not enough to trigger transitions
