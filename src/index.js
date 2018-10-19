@@ -34,30 +34,10 @@ const getTransitions = ({nodeInfo, prevRect, currentRect}) => {
     {dim: 'width', scaleFn: scaleX},
   ]
   dimensions.forEach(({dim, scaleFn}) => {
-    if (opts.scaleMode === 'non-transform') {
-      if (prevRect[dim] !== currentRect[dim]) {
-        transitions.push({
-          prop: dim,
-          flipStartVal: `${prevRect[dim]}px`,
-          flipEndVal: `${currentRect[dim]}px`,
-          resetTo: node.style[dim],
-        })
-      }
-    } else if (opts.scaleMode === 'immediate') {
-      if (prevRect[dim] !== currentRect[dim]) {
-        transitions.push({
-          prop: dim,
-          flipStartVal: `${currentRect[dim]}px`,
-          flipEndVal: null,
-          resetTo: node.style[dim],
-        })
-      }
-    } else if (opts.scaleMode === 'transform') {
-      if (prevRect[dim] !== currentRect[dim]) {
-        transforms.push(
-          scaleFn(Math.max(prevRect[dim], 1) / Math.max(currentRect[dim], 1)),
-        )
-      }
+    if (prevRect[dim] !== currentRect[dim]) {
+      transforms.push(
+        scaleFn(Math.max(prevRect[dim], 1) / Math.max(currentRect[dim], 1)),
+      )
     }
   })
   if (transforms.length) {
@@ -157,7 +137,7 @@ export class FlipGroup extends React.Component {
 
   static defaultProps = {
     durationMs: 200,
-    timingFunction: 'ease',
+    timingFunction: 'linear',
   }
 
   /*

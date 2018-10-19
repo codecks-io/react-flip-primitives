@@ -12,7 +12,7 @@ const ExpandText = ({
   isActive,
   onClick,
 }) => (
-  <div ref={registerNode(`container-${flipKey}`, {scaleMode: 'immediate'})}>
+  <div ref={registerNode(`container-${flipKey}`)}>
     <div>{preview}</div>
     <EnterLeaveGroup
       registerNode={registerNode}
@@ -26,7 +26,6 @@ const ExpandText = ({
           <div
             key={key}
             ref={registerEnterLeave(key, {
-              scaleMode: 'non-transform',
               positionMode: 'none',
               transitionProps: ['opacity'],
             })}
@@ -37,7 +36,12 @@ const ExpandText = ({
         ))
       }
     </EnterLeaveGroup>
-    <button onClick={onClick}>{isActive ? 'collapse' : 'expand'}</button>
+    <button
+      ref={registerNode(`button-${flipKey}`, {positionMode: 'none'})}
+      onClick={onClick}
+    >
+      {isActive ? 'collapse' : 'expand'}
+    </button>
   </div>
 )
 
