@@ -7,34 +7,38 @@ import Text from './Text'
 
 const ExpandText = ({
   flipKey,
-  registerNode,
+  registerNode: registerOuterNode,
   preview,
   children,
   isActive,
   onClick,
 }) => (
-  <div
-    className={styles.container}
-    ref={registerNode(`container-${flipKey}`, {scaleMode: 'immediate'})}
-  >
-    <div>{preview}</div>
-    <div
-      className={styles.more}
-      style={{
-        height: isActive ? 'auto' : 1,
-        opacity: isActive ? 1 : 0,
-        overflow: 'hidden',
-      }}
-      ref={registerNode(`preview-${flipKey}`, {
-        scaleMode: 'non-transform',
-        positionMode: 'none',
-        transitionProps: ['opacity'],
-      })}
-    >
-      {children}
-    </div>
-    <button onClick={onClick}>{isActive ? 'collapse' : 'expand'}</button>
-  </div>
+  <FlipGroup changeKey={isActive} durationMs={500}>
+    {registerInnerNode => (
+      <div
+        className={styles.container}
+        ref={registerOuterNode(flipKey, {scaleMode: 'none'})}
+      >
+        <div>{preview}</div>
+        <div
+          className={styles.more}
+          style={{
+            height: isActive ? 'auto' : 50,
+            opacity: isActive ? 1 : 0.5,
+            overflow: 'hidden',
+          }}
+          ref={registerInnerNode(`preview-${flipKey}`, {
+            transitionProps: ['opacity'],
+          })}
+        >
+          {children}
+        </div>
+        <button onClick={onClick} ref={registerInnerNode(`button-${flipKey}`)}>
+          {isActive ? 'collapse' : 'expand'}
+        </button>
+      </div>
+    )}
+  </FlipGroup>
 )
 
 ExpandText.propTypes = {
@@ -49,7 +53,7 @@ ExpandText.propTypes = {
 const Simple = () => (
   <Set>
     {({values, add, remove, has}) => (
-      <FlipGroup changeKey={values.join('-')}>
+      <FlipGroup changeKey={values.join('-')} durationMs={500}>
         {registerNode => (
           <React.Fragment>
             <ExpandText

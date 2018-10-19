@@ -47,6 +47,7 @@ export class FlipGroup extends React.Component {
       key,
       node: null,
       handler: node => {
+        const {durationMs, timingFunction} = this.props
         if (newVal.currentTransition) newVal.currentTransition.clearTimeout()
         newVal.node = node
         if (node) {
@@ -63,7 +64,12 @@ export class FlipGroup extends React.Component {
               )
             }
           }
-          node.style.transition = 'none'
+          node.style.transition = opts.transitionProps
+            .map(
+              prop =>
+                `${prop} ${durationMs}ms ${timingFunction} ${opts.delayMs}ms`,
+            )
+            .join(', ')
         }
       },
       opts,
@@ -85,8 +91,9 @@ export class FlipGroup extends React.Component {
       if (node) measuredNodes[key] = node.getBoundingClientRect()
     })
     nodeInfos.forEach(nodeInfo => {
-      if (nodeInfo.currentTransition && nodeInfo.node) {
-        nodeInfo.currentTransition.resetStyles()
+      if (nodeInfo.currentTransition) {
+        nodeInfo.currentTransition.clearTimeout()
+        nodeInfo.currentTransition = null
       }
     })
     return measuredNodes
@@ -120,18 +127,22 @@ export class FlipGroup extends React.Component {
   }
 
   styleEntering(measuredNodes, nodes) {
-    if (!nodes.length) return {}
-    const resetDecoStyle = {}
+    if (!nodes.length) return () => {}
+    const resetStyles = []
     const newPositions = []
     nodes.forEach(nodeInfo => {
+      resetStyles.push(
+        setStylesAndCreateResetter(nodeInfo.node, {
+          transition: 'none',
+        }),
+      )
       const {
         decorationStyle,
         positionStyle,
       } = nodeInfo.opts.isEnteringWithStyles
       if (decorationStyle) {
-        resetDecoStyle[nodeInfo.key] = setStylesAndCreateResetter(
-          nodeInfo.node,
-          decorationStyle,
+        resetStyles.push(
+          setStylesAndCreateResetter(nodeInfo.node, decorationStyle),
         )
       }
       if (positionStyle) {
@@ -159,11 +170,10 @@ export class FlipGroup extends React.Component {
       measuredNodes[key] = node.getBoundingClientRect()
     })
     resetPositions.forEach(reset => reset())
-    return resetDecoStyle
+    return () => resetStyles.forEach(reset => reset())
   }
 
   styleLeavingAndRemoveFromFlow(nodes, measuredNodes) {
-    const {durationMs, timingFunction} = this.props
     if (!nodes.length) return
     const newPositions = []
     nodes.forEach(nodeInfo => {
@@ -180,9 +190,6 @@ export class FlipGroup extends React.Component {
           top: nodeInfo.node.offsetTop - marginTop,
           left: nodeInfo.node.offsetLeft - marginLeft,
           position: 'absolute',
-          transition: nodeInfo.opts.transitionProps
-            .map(prop => `${prop} ${durationMs}ms ${timingFunction}`)
-            .join(', '),
         },
       })
     })
@@ -208,23 +215,18 @@ export class FlipGroup extends React.Component {
     const {durationMs, timingFunction} = this.props
     const enteringNodes = []
     const leavingNodes = []
-    const stayingNodes = []
-    Object.values(this.nodeInfoPerKey).forEach(nodeInfo => {
+    const nodeInfos = Object.values(this.nodeInfoPerKey)
+    nodeInfos.forEach(nodeInfo => {
       if (this.isEnteringNode(nodeInfo, measuredNodes)) {
         enteringNodes.push(nodeInfo)
       } else if (this.isLeavingNode(nodeInfo)) {
         leavingNodes.push(nodeInfo)
-      } else {
-        stayingNodes.push(nodeInfo)
       }
     })
 
     this.styleLeavingAndRemoveFromFlow(leavingNodes, measuredNodes)
-    const resetEnterDecorationByKey = this.styleEntering(
-      measuredNodes,
-      enteringNodes,
-    )
-    ;[...enteringNodes, ...stayingNodes, ...leavingNodes].forEach(nodeInfo => {
+    const resetEnterStyles = this.styleEntering(measuredNodes, enteringNodes)
+    nodeInfos.forEach(nodeInfo => {
       if (nodeInfo.node && measuredNodes[nodeInfo.key]) {
         newPositions.push({
           nodeInfo,
@@ -241,13 +243,12 @@ export class FlipGroup extends React.Component {
     if (nextFrameActions.length) {
       // asking for two animation frames since one frame is sometimes not enough to trigger transitions
       requestAnimationFrame(() =>
-        requestAnimationFrame(() =>
-          nextFrameActions.forEach(({resetFlipStyles, key}) => {
-            if (resetFlipStyles) resetFlipStyles()
-            if (resetEnterDecorationByKey[key]) {
-              resetEnterDecorationByKey[key]()
-            }
-          }),
+        requestAnimationFrame(
+          () =>
+            nextFrameActions.forEach(({resetFlipStyles}) => {
+              if (resetFlipStyles) resetFlipStyles()
+            }),
+          resetEnterStyles(),
         ),
       )
     }
