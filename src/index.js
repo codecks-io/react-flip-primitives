@@ -85,7 +85,10 @@ const flipNode = (
     nodeInfo.node.style.willChange = transitions.map(({prop}) => prop).join(',')
   }
   nodeInfo.node.style.transition = nodeInfo.opts.transitionProps
-    .map(prop => `${prop} ${durationMs}ms ${timingFunction}`)
+    .map(
+      prop =>
+        `${prop} ${durationMs}ms ${timingFunction} ${nodeInfo.opts.delayMs}ms`,
+    )
     .join(', ')
   transitions.forEach(({flipStartVal, prop}) => {
     nodeInfo.node.style[prop] = flipStartVal
@@ -97,7 +100,12 @@ const flipNode = (
         ...trueTransitions,
         ...nodeInfo.opts.transitionProps.map(prop => ({prop})),
       ]
-        .map(({prop}) => `${prop} ${durationMs}ms ${timingFunction}`)
+        .map(
+          ({prop}) =>
+            `${prop} ${durationMs}ms ${timingFunction} ${
+              nodeInfo.opts.delayMs
+            }ms`,
+        )
         .join(',')
       trueTransitions.forEach(({flipEndVal, prop}) => {
         nodeInfo.node.style[prop] = flipEndVal
@@ -116,7 +124,12 @@ const flipNode = (
       clearTimeout: () => clearTimeout(timeoutId),
       resetStyles: () => {
         nodeInfo.node.style.transition = nodeInfo.opts.transitionProps
-          .map(prop => `${prop} ${durationMs}ms ${timingFunction}`)
+          .map(
+            prop =>
+              `${prop} ${durationMs}ms ${timingFunction} ${
+                nodeInfo.opts.delayMs
+              }ms`,
+          )
           .join(', ')
         transitions.forEach(({resetTo, prop}) => {
           if (resetTo !== undefined) nodeInfo.node.style[prop] = resetTo
@@ -131,6 +144,7 @@ const defaultHandlerOpts = {
   scaleMode: 'transform',
   transitionProps: [],
   setWillChange: false,
+  delayMs: 0,
 }
 
 export default class ReactFlip extends React.Component {
