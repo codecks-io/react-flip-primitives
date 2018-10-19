@@ -183,8 +183,8 @@ export default class ReactFlip extends React.Component {
                 '\nThis will be overwritten by react-flip-primitives. Use `registerFlip(key, {transitionProps: ["opacity" , ...]})` instead!',
               )
             }
-            node.style.transition = 'none'
           }
+          node.style.transition = 'none'
         }
       },
       opts,
@@ -243,20 +243,43 @@ export default class ReactFlip extends React.Component {
   styleEntering(measuredNodes, nodes) {
     if (!nodes.length) return {}
     const resetDecoStyle = {}
-    const resetPosStyles = {}
-    nodes.forEach(({node, opts, key}) => {
-      const {positionStyle, decorationStyle} = opts.isEnteringWithStyles
-      if (positionStyle) {
-        resetPosStyles[key] = setStylesAndCreateResetter(node, positionStyle)
-      }
+    const newPositions = []
+    nodes.forEach(nodeInfo => {
+      const {
+        decorationStyle,
+        positionStyle,
+      } = nodeInfo.opts.isEnteringWithStyles
       if (decorationStyle) {
-        resetDecoStyle[key] = setStylesAndCreateResetter(node, decorationStyle)
+        resetDecoStyle[nodeInfo.key] = setStylesAndCreateResetter(
+          nodeInfo.node,
+          decorationStyle,
+        )
+      }
+      if (positionStyle) {
+        const rect = nodeInfo.node.getBoundingClientRect()
+        const cStyle = getComputedStyle(nodeInfo.node, null)
+        const marginTop = parseInt(cStyle.getPropertyValue('margin-top'), 10)
+        const marginLeft = parseInt(cStyle.getPropertyValue('margin-left'), 10)
+        newPositions.push({
+          nodeInfo,
+          style: {
+            width: rect.width,
+            height: rect.height,
+            ...positionStyle,
+            top: nodeInfo.node.offsetTop - marginTop,
+            left: nodeInfo.node.offsetLeft - marginLeft,
+            position: 'absolute',
+          },
+        })
       }
     })
-    nodes.forEach(({node, key}) => {
+    const resetPositions = newPositions.map(({nodeInfo, style}) => {
+      return setStylesAndCreateResetter(nodeInfo.node, style)
+    })
+    nodes.forEach(({key, node}) => {
       measuredNodes[key] = node.getBoundingClientRect()
     })
-    Object.values(resetPosStyles).forEach(resetFn => resetFn())
+    resetPositions.forEach(reset => reset())
     return resetDecoStyle
   }
 
@@ -316,8 +339,13 @@ export default class ReactFlip extends React.Component {
         stayingNodes.push(nodeInfo)
       }
     })
+
     this.styleLeavingAndRemoveFromFlow(leavingNodes, measuredNodes)
-    const measureNode = nodeInfo => {
+    const resetEnterDecorationByKey = this.styleEntering(
+      measuredNodes,
+      enteringNodes,
+    )
+    ;[...enteringNodes, ...stayingNodes, ...leavingNodes].forEach(nodeInfo => {
       if (nodeInfo.node && measuredNodes[nodeInfo.key]) {
         newPositions.push({
           nodeInfo,
@@ -325,12 +353,7 @@ export default class ReactFlip extends React.Component {
           currentRect: nodeInfo.node.getBoundingClientRect(),
         })
       }
-    }
-    const resetEnterDecorationByKey = this.styleEntering(
-      measuredNodes,
-      enteringNodes,
-    )
-    ;[...enteringNodes, ...stayingNodes, ...leavingNodes].forEach(measureNode)
+    })
 
     const nextFrameActions = newPositions.map(p => ({
       resetFlipStyles: flipNode(p, {durationMs, timingFunction}),

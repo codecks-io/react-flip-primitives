@@ -6,7 +6,7 @@ import ReactFlip, {LeaveEnter} from '../../src/index'
 import GenerateNumbers from "./GenerateNumbers.js"
 
 <GenerateNumbers min={10} max={50} count={10}>{(numbers, regenerate) => (
-  <ReactFlip noAnimationOnMount changeKey={numbers.join('-')} durationMs={1500}>{registerFlip => (
+  <ReactFlip noAnimationOnMount changeKey={numbers.join('-')} durationMs={500}>{registerFlip => (
     <React.Fragment>
       <LeaveEnter
         registerFlip={registerFlip}
