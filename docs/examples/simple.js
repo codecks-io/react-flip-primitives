@@ -1,13 +1,13 @@
 import React from 'react'
 import {Set} from 'react-powerplug'
 import PropTypes from 'prop-types'
-import ReactFlip from '../../src/index'
+import {FlipGroup} from '../../src/index'
 import styles from '../styles.module.css'
 import Text from './Text'
 
 const ExpandText = ({
   flipKey,
-  registerFlip,
+  registerNode,
   preview,
   children,
   isActive,
@@ -15,7 +15,7 @@ const ExpandText = ({
 }) => (
   <div
     className={styles.container}
-    ref={registerFlip(`container-${flipKey}`, {scaleMode: 'immediate'})}
+    ref={registerNode(`container-${flipKey}`, {scaleMode: 'immediate'})}
   >
     <div>{preview}</div>
     <div
@@ -25,7 +25,7 @@ const ExpandText = ({
         opacity: isActive ? 1 : 0,
         overflow: 'hidden',
       }}
-      ref={registerFlip(`preview-${flipKey}`, {
+      ref={registerNode(`preview-${flipKey}`, {
         scaleMode: 'non-transform',
         positionMode: 'none',
         transitionProps: ['opacity'],
@@ -39,7 +39,7 @@ const ExpandText = ({
 
 ExpandText.propTypes = {
   flipKey: PropTypes.any,
-  registerFlip: PropTypes.any,
+  registerNode: PropTypes.any,
   preview: PropTypes.any,
   children: PropTypes.any,
   isActive: PropTypes.any,
@@ -49,14 +49,14 @@ ExpandText.propTypes = {
 const Simple = () => (
   <Set>
     {({values, add, remove, has}) => (
-      <ReactFlip changeKey={values.join('-')}>
-        {registerFlip => (
+      <FlipGroup changeKey={values.join('-')}>
+        {registerNode => (
           <React.Fragment>
             <ExpandText
               isActive={has('text1')}
               onClick={() => (has('text1') ? remove('text1') : add('text1'))}
               flipKey="text1"
-              registerFlip={registerFlip}
+              registerNode={registerNode}
               preview={<h2>Some heading</h2>}
             >
               <Text />
@@ -65,14 +65,14 @@ const Simple = () => (
               isActive={has('text2')}
               onClick={() => (has('text2') ? remove('text2') : add('text2'))}
               flipKey="text2"
-              registerFlip={registerFlip}
+              registerNode={registerNode}
               preview={<h2>Some other Heading</h2>}
             >
               <Text />
             </ExpandText>
           </React.Fragment>
         )}
-      </ReactFlip>
+      </FlipGroup>
     )}
   </Set>
 )

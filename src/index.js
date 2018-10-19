@@ -147,7 +147,7 @@ const defaultHandlerOpts = {
   delayMs: 0,
 }
 
-export default class ReactFlip extends React.Component {
+export class FlipGroup extends React.Component {
   static propTypes = {
     durationMs: PropTypes.number,
     timingFunction: PropTypes.string,
@@ -194,7 +194,7 @@ export default class ReactFlip extends React.Component {
               console.warn(
                 `Found user-defined transition "${existingTransition}" on\b`,
                 node,
-                '\nThis will be overwritten by react-flip-primitives. Use `registerFlip(key, {transitionProps: ["opacity" , ...]})` instead!',
+                '\nThis will be overwritten by react-flip-primitives. Use `registerNode(key, {transitionProps: ["opacity" , ...]})` instead!',
               )
             }
           }
@@ -208,7 +208,7 @@ export default class ReactFlip extends React.Component {
     return opts._passInfo ? newVal : newVal.handler
   }
 
-  setStyle = (key, opts = {}) => {
+  registerNode = (key, opts = {}) => {
     return this.getOrCreateHandlerForKey(key, opts)
   }
 
@@ -398,11 +398,11 @@ export default class ReactFlip extends React.Component {
   }
 
   render() {
-    return this.props.children(this.setStyle)
+    return this.props.children(this.registerNode)
   }
 }
 
-export class LeaveEnter extends React.Component {
+export class EnterLeaveGroup extends React.Component {
   static propTypes = {
     keysAndData: PropTypes.arrayOf(
       PropTypes.shape({
@@ -410,7 +410,7 @@ export class LeaveEnter extends React.Component {
         data: PropTypes.any,
       }),
     ).isRequired,
-    registerFlip: PropTypes.func.isRequired,
+    registerNode: PropTypes.func.isRequired,
     children: PropTypes.func.isRequired,
     leaveStyle: PropTypes.object,
     enterPositionStyle: PropTypes.object,
@@ -456,7 +456,7 @@ export class LeaveEnter extends React.Component {
   }
 
   registerNode = (key, opts) => {
-    const {registerFlip} = this.props
+    const {registerNode} = this.props
     const {enteringKeys, leavingKeys} = this.state
     const passedOpts = {
       ...opts,
@@ -472,7 +472,7 @@ export class LeaveEnter extends React.Component {
           })),
       },
     }
-    const nodeInfo = registerFlip(key, passedOpts)
+    const nodeInfo = registerNode(key, passedOpts)
     this.nodeInfoPerKey[key] = nodeInfo
     return nodeInfo.handler
   }

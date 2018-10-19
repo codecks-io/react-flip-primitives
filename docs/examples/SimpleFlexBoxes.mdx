@@ -3,30 +3,30 @@ name: Simple Flex Boxes
 ---
 
 import {Value} from "react-powerplug"
-import ReactFlip, {LeaveEnter} from '../../src/index'
+import {FlipGroup, EnterLeaveGroup} from '../../src/index'
 
 <Value initial={1}>{({value, set}) => (
-  <ReactFlip noAnimationOnMount changeKey={value} durationMs={1500}>{registerFlip => (
+  <FlipGroup noAnimationOnMount changeKey={value} durationMs={1500}>{registerNode => (
     <React.Fragment>
-      <LeaveEnter
-        registerFlip={registerFlip}
+      <EnterLeaveGroup
+        registerNode={registerNode}
         keysAndData={Array.from(new Array(value), (_, index) => ({key: index.toString(), data: 40}))}
         enterPositionStyle={{width: 1}}
         enterDecorationStyle={{opacity: 0}}
         leaveStyle={{opacity: 0, width: 1}}
-      >{(keysAndData, registerLeaveEnter) => (
+      >{(keysAndData, registerEnterLeave) => (
         <div style={{display: 'flex', flexWrap: 'wrap'}}>
           {keysAndData.map(({key, data: number}) => (
             <div
               key={key}
               style={{width: `${number}%`, height: 50, backgroundColor: `hsl(${number * 5}, 50%, 50%)`, margin: '0 10px 20px', opacity: 1}}
-              ref={registerLeaveEnter(key, {transitionProps: ["background-color", "opacity"]})}
+              ref={registerEnterLeave(key, {transitionProps: ["background-color", "opacity"]})}
             />
           ))}
         </div>
-      )}</LeaveEnter>
-      <button onClick={() => set(value + 1)} ref={registerFlip('button+1')}>+1</button>
-      <button onClick={() => set(value - 1)} ref={registerFlip('button-1')}>-1</button>
+      )}</EnterLeaveGroup>
+      <button onClick={() => set(value + 1)} ref={registerNode('button+1')}>+1</button>
+      <button onClick={() => set(value - 1)} ref={registerNode('button-1')}>-1</button>
     </React.Fragment>
-  )}</ReactFlip>
+  )}</FlipGroup>
 )}</Value>
