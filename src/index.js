@@ -9,6 +9,7 @@ import {
   toString,
 } from 'rematrix'
 import mergeDiff from './mergeDiff'
+import {setStylesAndCreateResetter} from './utils'
 
 // 3d transforms were causing weird issues in chrome,
 // especially when opacity was also being tweened,
@@ -136,7 +137,7 @@ export default class ReactFlip extends React.Component {
   static propTypes = {
     durationMs: PropTypes.number,
     timingFunction: PropTypes.string,
-    changeKey: PropTypes.string.isRequired,
+    changeKey: PropTypes.any.isRequired,
     children: PropTypes.func.isRequired,
   }
 
@@ -150,7 +151,7 @@ export default class ReactFlip extends React.Component {
     key: {
       key, node, handler,
       currentTransition?: {clearTimeout, resetStyles},
-      leaving?: {onDone, beforeLeavingStyles, onDone}
+      leaving?: {onDone, abortLeaving}
     }
   }
   */
@@ -182,17 +183,7 @@ export default class ReactFlip extends React.Component {
                 '\nThis will be overwritten by react-flip-primitives. Use `registerFlip(key, {transitionProps: ["opacity" , ...]})` instead!',
               )
             }
-            if (opts.transitionProps.length) {
-              node.style.transition = opts.transitionProps
-                .map(prop => ({prop}))
-                .map(
-                  ({prop}) =>
-                    `${prop} ${this.props.durationMs}ms ${
-                      this.props.timingFunction
-                    }`,
-                )
-                .join(',')
-            }
+            node.style.transition = 'none'
           }
         }
       },
@@ -219,27 +210,18 @@ export default class ReactFlip extends React.Component {
         nodeInfo.currentTransition.resetStyles()
       }
       if (nodeInfo.opts.isLeaving && !nodeInfo.leaving) {
-        const beforeLeavingStyles = {}
-        Object.entries(nodeInfo.opts.isLeaving.finalStyle).forEach(
-          ([prop, val]) => {
-            beforeLeavingStyles[prop] = nodeInfo.node.style[prop]
-            nodeInfo.node.style[prop] =
-              prop !== 'opacity' && typeof val === 'number' ? `${val}px` : val
-          },
+        const resetLeavingStyle = setStylesAndCreateResetter(
+          nodeInfo.node,
+          nodeInfo.opts.isLeaving.finalStyle,
         )
         nodeInfo.leaving = {
-          beforeLeavingStyles,
           onDone: () => {
             nodeInfo.opts.isLeaving.onDone()
             nodeInfo.leaving = null
             delete this.nodeInfoPerKey[nodeInfo.key]
           },
           abortLeaving: () => {
-            Object.entries(nodeInfo.leaving.beforeLeavingStyles).forEach(
-              ([prop, val]) => {
-                nodeInfo.node.style[prop] = val
-              },
-            )
+            resetLeavingStyle()
             nodeInfo.leaving = null
           },
         }
@@ -248,12 +230,7 @@ export default class ReactFlip extends React.Component {
     return measuredNodes
   }
 
-  performUpdate(measuredNodes) {
-    const newPositions = []
-    const {durationMs, timingFunction} = this.props
-    const nodeInfos = Object.values(this.nodeInfoPerKey)
-
-    // first look for entering nodes and measure them
+  styleEntering(measuredNodes, nodeInfos) {
     const enteringNodes = nodeInfos.filter(nodeInfo => {
       if (nodeInfo.opts.isEnteringWithStyles) {
         if (measuredNodes[nodeInfo.key]) {
@@ -269,46 +246,44 @@ export default class ReactFlip extends React.Component {
       }
       return false
     })
-    const orgEnterDecorationStylesFns = {}
-    if (enteringNodes.length) {
-      const orgEnterPositionStyles = {}
-      enteringNodes.forEach(({node, opts, key}) => {
-        orgEnterPositionStyles[key] = {}
-        Object.entries(opts.isEnteringWithStyles.positionStyle).forEach(
-          ([prop, val]) => {
-            orgEnterPositionStyles[key][prop] = node.style[prop]
-            node.style[prop] = typeof val === 'number' ? `${val}px` : val
-          },
-        )
-        if (opts.isEnteringWithStyles.decorationStyle) {
-          const orgEnterDecorationStyles = {}
-          Object.entries(opts.isEnteringWithStyles.decorationStyle).forEach(
-            ([prop, val]) => {
-              orgEnterDecorationStyles[prop] = node.style[prop]
-              node.style[prop] = val
-            },
-          )
-          orgEnterDecorationStylesFns[key] = () => {
-            Object.entries(orgEnterDecorationStyles).forEach(([prop, val]) => {
-              node.style[prop] = val
-            })
-          }
-        }
-      })
-      enteringNodes.forEach(({node, key}) => {
-        measuredNodes[key] = node.getBoundingClientRect()
-      })
-      enteringNodes.forEach(({node, key}) => {
-        Object.entries(orgEnterPositionStyles[key]).forEach(([prop, val]) => {
-          node.style[prop] = val
-        })
-      })
-    }
     nodeInfos.forEach(({leaving, opts}) => {
       if (leaving && !opts.isLeaving) {
         leaving.abortLeaving()
       }
     })
+    if (!enteringNodes.length) return {}
+    const resetDecoStyle = {}
+    const resetPositionStyles = {}
+    enteringNodes.forEach(({node, opts, key}) => {
+      if (opts.isEnteringWithStyles.positionStyle) {
+        resetPositionStyles[key] = setStylesAndCreateResetter(
+          node,
+          opts.isEnteringWithStyles.positionStyle,
+        )
+      }
+      if (opts.isEnteringWithStyles.decorationStyle) {
+        resetDecoStyle[key] = setStylesAndCreateResetter(
+          node,
+          opts.isEnteringWithStyles.decorationStyle,
+        )
+      }
+    })
+    enteringNodes.forEach(({node, key}) => {
+      measuredNodes[key] = node.getBoundingClientRect()
+    })
+    Object.values(resetPositionStyles).forEach(resetFn => resetFn())
+    return resetDecoStyle
+  }
+
+  performUpdate(measuredNodes) {
+    const newPositions = []
+    const {durationMs, timingFunction} = this.props
+    const nodeInfos = Object.values(this.nodeInfoPerKey)
+    const resetEnterDecorationByKey = this.styleEntering(
+      measuredNodes,
+      nodeInfos,
+    )
+
     nodeInfos.forEach(nodeInfo => {
       if (nodeInfo.node && measuredNodes[nodeInfo.key]) {
         newPositions.push({
@@ -318,20 +293,18 @@ export default class ReactFlip extends React.Component {
         })
       }
     })
-    const nextFrameActions = newPositions
-      .map(p => ({
-        cb: flipNode(p, {durationMs, timingFunction}),
-        key: p.nodeInfo.key,
-      }))
-      .filter(({cb}) => cb)
+    const nextFrameActions = newPositions.map(p => ({
+      cb: flipNode(p, {durationMs, timingFunction}),
+      key: p.nodeInfo.key,
+    }))
     if (nextFrameActions.length) {
       // asking for two animation frames since one frame is sometimes not enough to trigger transitions
       requestAnimationFrame(() =>
         requestAnimationFrame(() =>
           nextFrameActions.forEach(({cb, key}) => {
-            cb()
-            if (orgEnterDecorationStylesFns[key]) {
-              orgEnterDecorationStylesFns[key]()
+            if (cb) cb()
+            if (resetEnterDecorationByKey[key]) {
+              resetEnterDecorationByKey[key]()
             }
           }),
         ),
