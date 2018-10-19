@@ -1,0 +1,31 @@
+---
+name: Shuffle Flex Boxes
+---
+
+import ReactFlip, {LeaveEnter} from '../../src/index'
+import GenerateNumbers from "./GenerateNumbers.js"
+
+<GenerateNumbers min={10} max={50} count={10}>{(numbers, regenerate) => (
+  <ReactFlip noAnimationOnMount changeKey={numbers.join('-')} durationMs={1500}>{registerFlip => (
+    <React.Fragment>
+      <LeaveEnter
+        registerFlip={registerFlip}
+        keysAndData={numbers.map((number, index) => ({key: index.toString(), data: number}))}
+        enterDecorationStyle={{opacity: 0}}
+        enterPositionStyle={{width: 1}}
+        leaveStyle={{opacity: 0, width: 1}}
+      >{(keysAndData, registerLeaveEnter) => (
+        <div style={{display: 'flex', flexWrap: 'wrap'}}>
+          {keysAndData.map(({key, data: number}) => (
+            <div
+              key={key}
+              style={{width: `${number}%`, height: 50, backgroundColor: `hsl(${number * 5}, 50%, 50%)`, margin: '0 10px 20px', opacity: 1}}
+              ref={registerLeaveEnter(key, {transitionProps: ["background-color", "opacity"]})}
+            />
+          ))}
+        </div>
+      )}</LeaveEnter>
+      <button onClick={regenerate} ref={registerFlip('button')}>regenerate</button>
+    </React.Fragment>
+  )}</ReactFlip>
+)}</GenerateNumbers>
