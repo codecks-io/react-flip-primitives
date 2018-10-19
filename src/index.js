@@ -261,20 +261,31 @@ export default class ReactFlip extends React.Component {
   }
 
   styleLeavingAndRemoveFromFlow(nodes, measuredNodes) {
+    const {durationMs, timingFunction} = this.props
     if (!nodes.length) return
+    const newPositions = []
     nodes.forEach(nodeInfo => {
       const rect = measuredNodes[nodeInfo.key]
       const cStyle = getComputedStyle(nodeInfo.node, null)
       const marginTop = parseInt(cStyle.getPropertyValue('margin-top'), 10)
       const marginLeft = parseInt(cStyle.getPropertyValue('margin-left'), 10)
-      const originalStyle = setStylesAndCreateResetter(nodeInfo.node, {
-        width: rect.width,
-        height: rect.height,
-        ...nodeInfo.opts.isLeaving.finalStyle,
-        top: rect.top - marginTop,
-        left: rect.left - marginLeft,
-        position: 'absolute',
+      newPositions.push({
+        nodeInfo,
+        style: {
+          width: rect.width,
+          height: rect.height,
+          ...nodeInfo.opts.isLeaving.finalStyle,
+          top: nodeInfo.node.offsetTop - marginTop,
+          left: nodeInfo.node.offsetLeft - marginLeft,
+          position: 'absolute',
+          transition: nodeInfo.opts.transitionProps
+            .map(prop => `${prop} ${durationMs}ms ${timingFunction}`)
+            .join(', '),
+        },
       })
+    })
+    newPositions.forEach(({nodeInfo, style}) => {
+      const originalStyle = setStylesAndCreateResetter(nodeInfo.node, style)
 
       nodeInfo.leaving = {
         onDone: () => {
