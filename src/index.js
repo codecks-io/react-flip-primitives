@@ -209,82 +209,104 @@ export default class ReactFlip extends React.Component {
       if (nodeInfo.currentTransition && nodeInfo.node) {
         nodeInfo.currentTransition.resetStyles()
       }
-      if (nodeInfo.opts.isLeaving && !nodeInfo.leaving) {
-        const resetLeavingStyle = setStylesAndCreateResetter(
-          nodeInfo.node,
-          nodeInfo.opts.isLeaving.finalStyle,
-        )
-        nodeInfo.leaving = {
-          onDone: () => {
-            nodeInfo.opts.isLeaving.onDone()
-            nodeInfo.leaving = null
-            delete this.nodeInfoPerKey[nodeInfo.key]
-          },
-          abortLeaving: () => {
-            resetLeavingStyle()
-            nodeInfo.leaving = null
-          },
-        }
-      }
     })
     return measuredNodes
   }
 
-  styleEntering(measuredNodes, nodeInfos) {
-    const enteringNodes = nodeInfos.filter(nodeInfo => {
-      if (nodeInfo.opts.isEnteringWithStyles) {
-        if (measuredNodes[nodeInfo.key]) {
-          // eslint-disable-next-line no-console
-          console.warn(
-            `'${
-              nodeInfo.key
-            }' is set as 'isEntering' even though it's measured already!?`,
-          )
-          return false
-        }
-        return true
+  isEnteringNode(nodeInfo, measuredNodes) {
+    if (nodeInfo.opts.isEnteringWithStyles) {
+      if (measuredNodes[nodeInfo.key]) {
+        // eslint-disable-next-line no-console
+        console.warn(
+          `'${
+            nodeInfo.key
+          }' is set as 'isEntering' even though it's measured already!?`,
+        )
+        return false
+      }
+      return true
+    }
+    return false
+  }
+
+  isLeavingNode(nodeInfo) {
+    if (nodeInfo.opts.isLeaving) {
+      return true
+    } else {
+      if (nodeInfo.leaving) {
+        nodeInfo.leaving.abortLeaving()
       }
       return false
-    })
-    nodeInfos.forEach(({leaving, opts}) => {
-      if (leaving && !opts.isLeaving) {
-        leaving.abortLeaving()
-      }
-    })
-    if (!enteringNodes.length) return {}
+    }
+  }
+
+  styleEntering(measuredNodes, nodes) {
+    if (!nodes.length) return {}
     const resetDecoStyle = {}
-    const resetPositionStyles = {}
-    enteringNodes.forEach(({node, opts, key}) => {
-      if (opts.isEnteringWithStyles.positionStyle) {
-        resetPositionStyles[key] = setStylesAndCreateResetter(
-          node,
-          opts.isEnteringWithStyles.positionStyle,
-        )
+    const resetPosStyles = {}
+    nodes.forEach(({node, opts, key}) => {
+      const {positionStyle, decorationStyle} = opts.isEnteringWithStyles
+      if (positionStyle) {
+        resetPosStyles[key] = setStylesAndCreateResetter(node, positionStyle)
       }
-      if (opts.isEnteringWithStyles.decorationStyle) {
-        resetDecoStyle[key] = setStylesAndCreateResetter(
-          node,
-          opts.isEnteringWithStyles.decorationStyle,
-        )
+      if (decorationStyle) {
+        resetDecoStyle[key] = setStylesAndCreateResetter(node, decorationStyle)
       }
     })
-    enteringNodes.forEach(({node, key}) => {
+    nodes.forEach(({node, key}) => {
       measuredNodes[key] = node.getBoundingClientRect()
     })
-    Object.values(resetPositionStyles).forEach(resetFn => resetFn())
+    Object.values(resetPosStyles).forEach(resetFn => resetFn())
     return resetDecoStyle
+  }
+
+  styleLeavingAndRemoveFromFlow(nodes, measuredNodes) {
+    if (!nodes.length) return
+    nodes.forEach(nodeInfo => {
+      const rect = measuredNodes[nodeInfo.key]
+      const cStyle = getComputedStyle(nodeInfo.node, null)
+      const marginTop = parseInt(cStyle.getPropertyValue('margin-top'), 10)
+      const marginLeft = parseInt(cStyle.getPropertyValue('margin-left'), 10)
+      const originalStyle = setStylesAndCreateResetter(nodeInfo.node, {
+        width: rect.width,
+        height: rect.height,
+        ...nodeInfo.opts.isLeaving.finalStyle,
+        top: rect.top - marginTop,
+        left: rect.left - marginLeft,
+        position: 'absolute',
+      })
+
+      nodeInfo.leaving = {
+        onDone: () => {
+          nodeInfo.opts.isLeaving.onDone()
+          nodeInfo.leaving = null
+          delete this.nodeInfoPerKey[nodeInfo.key]
+        },
+        abortLeaving: () => {
+          originalStyle()
+          nodeInfo.leaving = null
+        },
+      }
+    })
   }
 
   performUpdate(measuredNodes) {
     const newPositions = []
     const {durationMs, timingFunction} = this.props
-    const nodeInfos = Object.values(this.nodeInfoPerKey)
-    const resetEnterDecorationByKey = this.styleEntering(
-      measuredNodes,
-      nodeInfos,
-    )
-
-    nodeInfos.forEach(nodeInfo => {
+    const enteringNodes = []
+    const leavingNodes = []
+    const stayingNodes = []
+    Object.values(this.nodeInfoPerKey).forEach(nodeInfo => {
+      if (this.isEnteringNode(nodeInfo, measuredNodes)) {
+        enteringNodes.push(nodeInfo)
+      } else if (this.isLeavingNode(nodeInfo)) {
+        leavingNodes.push(nodeInfo)
+      } else {
+        stayingNodes.push(nodeInfo)
+      }
+    })
+    this.styleLeavingAndRemoveFromFlow(leavingNodes, measuredNodes)
+    const measureNode = nodeInfo => {
       if (nodeInfo.node && measuredNodes[nodeInfo.key]) {
         newPositions.push({
           nodeInfo,
@@ -292,17 +314,23 @@ export default class ReactFlip extends React.Component {
           currentRect: nodeInfo.node.getBoundingClientRect(),
         })
       }
-    })
+    }
+    const resetEnterDecorationByKey = this.styleEntering(
+      measuredNodes,
+      enteringNodes,
+    )
+    ;[...enteringNodes, ...stayingNodes, ...leavingNodes].forEach(measureNode)
+
     const nextFrameActions = newPositions.map(p => ({
-      cb: flipNode(p, {durationMs, timingFunction}),
+      resetFlipStyles: flipNode(p, {durationMs, timingFunction}),
       key: p.nodeInfo.key,
     }))
     if (nextFrameActions.length) {
       // asking for two animation frames since one frame is sometimes not enough to trigger transitions
       requestAnimationFrame(() =>
         requestAnimationFrame(() =>
-          nextFrameActions.forEach(({cb, key}) => {
-            if (cb) cb()
+          nextFrameActions.forEach(({resetFlipStyles, key}) => {
+            if (resetFlipStyles) resetFlipStyles()
             if (resetEnterDecorationByKey[key]) {
               resetEnterDecorationByKey[key]()
             }
