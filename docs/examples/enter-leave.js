@@ -1,7 +1,7 @@
 import React from 'react'
 import {Set} from 'react-powerplug'
 import PropTypes from 'prop-types'
-import {FlipGroup, EnterLeaveGroup} from '../../src/index'
+import {OnOff, FlipGroup} from '../../src/index'
 import Text from './Text'
 
 const ExpandText = ({
@@ -16,15 +16,15 @@ const ExpandText = ({
     {registerInnerNode => (
       <div ref={registerNode(`container-${flipKey}`, {scaleMode: 'none'})}>
         <div>{preview}</div>
-        <EnterLeaveGroup
+        <OnOff
           registerNode={registerInnerNode}
-          keysAndData={isActive ? [{key: flipKey, data: children}] : []}
+          keyAndData={isActive ? {key: flipKey, data: children} : null}
           enterPositionStyle={{height: 1}}
           enterDecorationStyle={{opacity: 0}}
           leaveStyle={{height: 1, opacity: 0}}
         >
-          {(keysAndData, registerEnterLeave) =>
-            keysAndData.map(({key, data}) => (
+          {(key, data, registerEnterLeave) =>
+            key && (
               <div
                 key={key}
                 ref={registerEnterLeave(key, {
@@ -35,9 +35,9 @@ const ExpandText = ({
               >
                 {data}
               </div>
-            ))
+            )
           }
-        </EnterLeaveGroup>
+        </OnOff>
         <button ref={registerInnerNode(`button`)} onClick={onClick}>
           {isActive ? 'collapse' : 'expand'}
         </button>

@@ -20,12 +20,12 @@ import GenerateNumbers from "./GenerateNumbers.js"
             <div
               key={key}
               style={{width: `${number}%`, height: 50, backgroundColor: `hsl(${number * 5}, 50%, 50%)`, margin: '0 10px 20px', opacity: 1}}
-              ref={registerEnterLeave(key, {transitionProps: ["background-color", "opacity"], delayMs: index * 20})}
+              ref={registerEnterLeave(key, {transitionProps: ["background-color", "opacity"], delayMs: index * 10})}
             />
           ))}
         </div>
       )}</EnterLeaveGroup>
-      <button onClick={regenerate} ref={registerNode('button', {delayMs: numbers.length * 20})}>regenerate</button>
+      <button onClick={regenerate} ref={registerNode('button', {delayMs: numbers.length * 10})}>regenerate</button>
     </React.Fragment>
   )}</FlipGroup>
 )}</GenerateNumbers>
