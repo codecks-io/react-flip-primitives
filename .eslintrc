@@ -1,1 +1,1 @@
-{"extends": "./node_modules/kcd-scripts/eslint.js"}
+{"extends": "@db-scripts/eslint-config/strict"}

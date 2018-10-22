@@ -880,6 +880,17 @@
     lodash "^4.17.10"
     to-fast-properties "^2.0.0"
 
+"@db-scripts/eslint-config@^0.1.1":
+  version "0.1.1"
+  resolved "https://registry.yarnpkg.com/@db-scripts/eslint-config/-/eslint-config-0.1.1.tgz#4c8060086b9a6f27b6c10dfc04359efe0dc67049"
+  dependencies:
+    babel-eslint "^9.0.0"
+    eslint-config-react-app "^3.0.4"
+    eslint-plugin-flowtype "^2.50.3"
+    eslint-plugin-import "^2.14.0"
+    eslint-plugin-jsx-a11y "^6.1.2"
+    eslint-plugin-react "^7.11.1"
+
 "@emotion/babel-utils@^0.6.4":
   version "0.6.10"
   resolved "https://registry.yarnpkg.com/@emotion/babel-utils/-/babel-utils-0.6.10.tgz#83dbf3dfa933fae9fc566e54fbb45f14674c6ccc"
@@ -2742,6 +2753,10 @@ configstore@^3.0.0:
     write-file-atomic "^2.0.0"
     xdg-basedir "^3.0.0"
 
+confusing-browser-globals@^1.0.4:
+  version "1.0.4"
+  resolved "https://registry.yarnpkg.com/confusing-browser-globals/-/confusing-browser-globals-1.0.4.tgz#7d3ae232117abdf158f968c1ebeeab42ea980991"
+
 connect-history-api-fallback@^1.5.0:
   version "1.5.0"
   resolved "https://registry.yarnpkg.com/connect-history-api-fallback/-/connect-history-api-fallback-1.5.0.tgz#b06873934bc5e344fef611a196a6faae0aee015a"
@@ -3988,6 +4003,12 @@ eslint-config-prettier@^3.0.1:
   dependencies:
     get-stdin "^6.0.0"
 
+eslint-config-react-app@^3.0.4:
+  version "3.0.4"
+  resolved "https://registry.yarnpkg.com/eslint-config-react-app/-/eslint-config-react-app-3.0.4.tgz#83f394d765e7d5af623d773e64609e9c9f2cbeb5"
+  dependencies:
+    confusing-browser-globals "^1.0.4"
+
 eslint-import-resolver-node@^0.3.1:
   version "0.3.2"
   resolved "https://registry.yarnpkg.com/eslint-import-resolver-node/-/eslint-import-resolver-node-0.3.2.tgz#58f15fb839b8d0576ca980413476aab2472db66a"
@@ -4023,6 +4044,12 @@ eslint-plugin-babel@^5.2.0:
   dependencies:
     eslint-rule-composer "^0.3.0"
 
+eslint-plugin-flowtype@^2.50.3:
+  version "2.50.3"
+  resolved "https://registry.yarnpkg.com/eslint-plugin-flowtype/-/eslint-plugin-flowtype-2.50.3.tgz#61379d6dce1d010370acd6681740fd913d68175f"
+  dependencies:
+    lodash "^4.17.10"
+
 eslint-plugin-import@^2.14.0:
   version "2.14.0"
   resolved "https://registry.yarnpkg.com/eslint-plugin-import/-/eslint-plugin-import-2.14.0.tgz#6b17626d2e3e6ad52cfce8807a845d15e22111a8"
@@ -4042,7 +4069,7 @@ eslint-plugin-jest@^21.22.0:
   version "21.24.1"
   resolved "https://registry.yarnpkg.com/eslint-plugin-jest/-/eslint-plugin-jest-21.24.1.tgz#aaf3c34e816f07add83d1e9c20696fdc31fac8dc"
 
-eslint-plugin-jsx-a11y@^6.1.1:
+eslint-plugin-jsx-a11y@^6.1.1, eslint-plugin-jsx-a11y@^6.1.2:
   version "6.1.2"
   resolved "https://registry.yarnpkg.com/eslint-plugin-jsx-a11y/-/eslint-plugin-jsx-a11y-6.1.2.tgz#69bca4890b36dcf0fe16dd2129d2d88b98f33f88"
   dependencies:
@@ -4091,7 +4118,7 @@ eslint-visitor-keys@^1.0.0:
   version "1.0.0"
   resolved "https://registry.yarnpkg.com/eslint-visitor-keys/-/eslint-visitor-keys-1.0.0.tgz#3f3180fb2e291017716acb4c9d6d5b5c34a6a81d"
 
-eslint@^5.0.0:
+eslint@5.7, eslint@^5.0.0:
   version "5.7.0"
   resolved "https://registry.yarnpkg.com/eslint/-/eslint-5.7.0.tgz#55c326d6fb2ad45fcbd0ce17c3846f025d1d819c"
   dependencies:
