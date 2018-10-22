@@ -12,37 +12,38 @@ const ExpandText = ({
   isActive,
   onClick,
 }) => (
-  <div ref={registerNode(`container-${flipKey}`)}>
-    <div>{preview}</div>
-    <EnterLeaveGroup
-      registerNode={registerNode}
-      keysAndData={isActive ? [{key: flipKey, data: children}] : []}
-      enterPositionStyle={{height: 1}}
-      enterDecorationStyle={{opacity: 0}}
-      leaveStyle={{height: 1, opacity: 0}}
-    >
-      {(keysAndData, registerEnterLeave) =>
-        keysAndData.map(({key, data}) => (
-          <div
-            key={key}
-            ref={registerEnterLeave(key, {
-              positionMode: 'none',
-              transitionProps: ['opacity'],
-            })}
-            style={{overflow: 'hidden'}}
-          >
-            {data}
-          </div>
-        ))
-      }
-    </EnterLeaveGroup>
-    <button
-      ref={registerNode(`button-${flipKey}`, {positionMode: 'none'})}
-      onClick={onClick}
-    >
-      {isActive ? 'collapse' : 'expand'}
-    </button>
-  </div>
+  <FlipGroup changeKey={isActive} durationMs={500}>
+    {registerInnerNode => (
+      <div ref={registerNode(`container-${flipKey}`, {scaleMode: 'none'})}>
+        <div>{preview}</div>
+        <EnterLeaveGroup
+          registerNode={registerInnerNode}
+          keysAndData={isActive ? [{key: flipKey, data: children}] : []}
+          enterPositionStyle={{height: 1}}
+          enterDecorationStyle={{opacity: 0}}
+          leaveStyle={{height: 1, opacity: 0}}
+        >
+          {(keysAndData, registerEnterLeave) =>
+            keysAndData.map(({key, data}) => (
+              <div
+                key={key}
+                ref={registerEnterLeave(key, {
+                  positionMode: 'none',
+                  transitionProps: ['opacity'],
+                })}
+                style={{overflow: 'hidden'}}
+              >
+                {data}
+              </div>
+            ))
+          }
+        </EnterLeaveGroup>
+        <button ref={registerInnerNode(`button`)} onClick={onClick}>
+          {isActive ? 'collapse' : 'expand'}
+        </button>
+      </div>
+    )}
+  </FlipGroup>
 )
 
 ExpandText.propTypes = {
@@ -59,7 +60,7 @@ const EnterLeave = () => (
     {({values, add, remove, has}) => (
       <FlipGroup
         changeKey={values.join('-')}
-        durationMs={1000}
+        durationMs={500}
         noAnimationOnMount
       >
         {registerNode => (
