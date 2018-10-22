@@ -6,6 +6,7 @@ import {
   multiply,
   toString,
 } from 'rematrix'
+import getAnimationNames from './animations'
 
 // 3d transforms were causing weird issues in chrome,
 // especially when opacity was also being tweened,
@@ -27,6 +28,15 @@ const getTransitions = (
     }
     list.push(transform)
   }
+  const animateNodes = new Map()
+  const addAnimation = (node, dim, inverse, ratio) => {
+    let val = animateNodes.get(node)
+    if (!val) {
+      val = {width: 1, height: 1, inverse}
+      animateNodes.set(node, val)
+    }
+    val[dim] = ratio
+  }
   const dimensions = [
     {dim: 'height', scaleFn: scaleY, translateFn: translateY, attr: 'top'},
     {dim: 'width', scaleFn: scaleX, translateFn: translateX, attr: 'left'},
@@ -43,9 +53,16 @@ const getTransitions = (
     if (prevRect[dim] !== currentRect[dim]) {
       if (opts.scaleMode !== 'none') {
         const ratio = Math.max(prevRect[dim], 1) / Math.max(currentRect[dim], 1)
-        addTransform(nodeInfo.node, scaleFn(ratio))
-        for (const childNode of nodeInfo.node.children) {
-          addTransform(childNode, scaleFn(1 / ratio))
+        if (
+          opts.scaleMode === 'transform-no-children' ||
+          !nodeInfo.node.children.length
+        ) {
+          addTransform(nodeInfo.node, scaleFn(ratio))
+        } else {
+          addAnimation(nodeInfo.node, dim, false, ratio)
+          for (const childNode of nodeInfo.node.children) {
+            addAnimation(childNode, dim, true, ratio)
+          }
         }
       }
     }
@@ -72,6 +89,20 @@ const getTransitions = (
       })
     })
   })
+
+  animateNodes.forEach(({width, height, inverse}, node) => {
+    const orgAnimation = node.style.animation
+    const {name, inverseName} = getAnimationNames(timingFunction, width, height)
+    console.log('name, inverseName', name, inverseName)
+    node.style.animation = `${
+      inverse ? inverseName : name
+    } ${durationMs}ms linear ${nodeInfo.opts.delayMs}ms`
+    node.style.transformOrigin = '0px 0px 0px'
+    actions.onTransitionDone.push(() => {
+      node.style.animation = orgAnimation
+    })
+  })
+
   return actions
 }
 

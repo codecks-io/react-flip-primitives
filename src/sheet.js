@@ -1,27 +1,28 @@
-let _sheet = null
+let _sheetInfo = null
 // {
 //   tag,
 //   ruleCount: 0
 // }
 
-const getSheet = () => {
-  if (!_sheet) {
+const getSheetInfo = () => {
+  if (!_sheetInfo) {
     const tag = document.createElement('style')
     tag.setAttribute('data-flip-primitives', true)
     tag.appendChild(document.createTextNode(''))
     document.head.appendChild(tag)
-    _sheet = {
+    _sheetInfo = {
       tag,
+      sheet: tag.sheet,
       ruleCount: 0,
     }
   }
-  return _sheet
+  return _sheetInfo
 }
 
 const addRule = rule => {
-  const sheet = getSheet()
-  sheet.tag.insertRule(rule, sheet.ruleCount)
-  sheet.ruleCount += 1
+  const info = getSheetInfo()
+  info.sheet.insertRule(rule, info.ruleCount)
+  info.ruleCount += 1
 }
 
 export default addRule

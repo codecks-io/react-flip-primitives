@@ -5,8 +5,8 @@ import {setStylesAndCreateResetter} from './utils'
 import flipNode from './flipNode'
 
 const defaultHandlerOpts = {
-  positionMode: 'transform',
-  scaleMode: 'transform',
+  positionMode: 'transform', // none | transform
+  scaleMode: 'transform', // none | transform | transform-no-children
   transitionProps: [],
   setWillChange: false,
   delayMs: 0,
@@ -22,7 +22,7 @@ export class FlipGroup extends React.Component {
 
   static defaultProps = {
     durationMs: 200,
-    timingFunction: 'linear',
+    timingFunction: 'ease-in-out',
   }
 
   /*

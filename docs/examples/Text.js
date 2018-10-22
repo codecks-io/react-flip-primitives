@@ -2,7 +2,7 @@ import React from 'react'
 
 const Text = () => (
   <div>
-    <p>
+    <div>
       Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod
       tempor incididunt ut labore et dolore magna aliqua. Semper risus in
       hendrerit gravida. Et molestie ac feugiat sed lectus vestibulum mattis
@@ -19,8 +19,8 @@ const Text = () => (
       blandit turpis cursus in hac habitasse. Egestas congue quisque egestas
       diam in arcu cursus euismod quis. Pretium quam vulputate dignissim
       suspendisse in est ante in. Tellus id interdum velit laoreet id.
-    </p>
-    <p>
+    </div>
+    <div>
       Tortor dignissim convallis aenean et tortor at risus viverra. Natoque
       penatibus et magnis dis parturient montes. Congue nisi vitae suscipit
       tellus mauris. Mi ipsum faucibus vitae aliquet nec ullamcorper. Donec
@@ -36,7 +36,7 @@ const Text = () => (
       ultrices gravida dictum fusce. Nullam vehicula ipsum a arcu cursus.
       Vulputate ut pharetra sit amet. Suspendisse in est ante in nibh mauris
       cursus mattis molestie.
-    </p>
+    </div>
   </div>
 )
 

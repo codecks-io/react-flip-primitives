@@ -28,6 +28,7 @@ const createKeyframeAnimation = (x, y, easeName, name) => {
     }
   }
   const animationSteps = []
+  const invAnimationSteps = []
 
   for (let step = 0; step <= 100; step++) {
     // Remap the step value to an eased one.
@@ -38,11 +39,19 @@ const createKeyframeAnimation = (x, y, easeName, name) => {
     animationSteps.push(`${step}% {
       transform: scale(${xScale}, ${yScale});
     }`)
+
+    invAnimationSteps.push(`${step}% {
+      transform: scale(${1 / xScale}, ${1 / yScale});
+    }`)
   }
 
   addRule(`
   @keyframes ${name} {
     ${animationSteps.join('\n')}
+  }`)
+  addRule(`
+  @keyframes ${name}_inv {
+    ${invAnimationSteps.join('\n')}
   }`)
 }
 
