@@ -1,31 +1,12 @@
 {
-  "dist/react-flip-primitives.cjs.js": {
-    "bundled": 23906,
-    "minified": 10523,
-    "gzipped": 3537
+  "dist/react-flip-primitives.umd.js": {
+    "bundled": 64372,
+    "minified": 21488,
+    "gzipped": 7454
   },
   "dist/react-flip-primitives.umd.min.js": {
-    "bundled": 33695,
-    "minified": 11280,
-    "gzipped": 4096
-  },
-  "dist/react-flip-primitives.umd.js": {
-    "bundled": 57994,
-    "minified": 18552,
-    "gzipped": 6304
-  },
-  "dist/react-flip-primitives.esm.js": {
-    "bundled": 23583,
-    "minified": 10258,
-    "gzipped": 3469,
-    "treeshaked": {
-      "rollup": {
-        "code": 7028,
-        "import_statements": 252
-      },
-      "webpack": {
-        "code": 8169
-      }
-    }
+    "bundled": 14015,
+    "minified": 13994,
+    "gzipped": 5275
   }
 }

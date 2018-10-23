@@ -1,32 +1,32 @@
 {
   "name": "react-flip-primitives",
   "version": "0.1.0",
-  "main": "index.js",
+  "main": "dist/cjs/index.js",
+  "module": "dist/es/index.js",
+  "files": [
+    "dist"
+  ],
   "author": "Daniel Berndt",
   "license": "MIT",
   "scripts": {
-    "add-contributor": "kcd-scripts contributors add",
-    "build": "kcd-scripts build --bundle --no-clean --size-snapshot",
-    "lint": "kcd-scripts lint",
-    "test": "kcd-scripts test --config=other/jest.config.js",
-    "test:update": "npm test -- --updateSnapshot --coverage",
-    "validate": "kcd-scripts validate",
+    "build": "db-scripts-bundle --size-snapshot",
+    "lint": "eslint src *.js",
     "setup": "npm install && npm run validate -s",
-    "precommit": "kcd-scripts precommit",
     "docz:dev": "docz dev",
     "docz:build": "docz build"
   },
   "devDependencies": {
-    "@babel/plugin-proposal-object-rest-spread": "^7.0.0",
+    "@db-scripts/bundle": "0.1.0",
     "@db-scripts/eslint-config": "^0.1.1",
     "docz": "^0.12.5",
     "docz-plugin-css": "^0.11.0",
     "eslint": "5.7",
-    "kcd-scripts": "^0.45.0",
-    "react-powerplug": "^1.0.0-rc.1"
+    "react-powerplug": "^1.0.0-rc.1",
+    "react": "^16.3.0",
+    "react-dom": "^16.3.0"
   },
   "peerDependencies": {
-    "react": ">=15.0.0"
+    "react": ">=16.3.0"
   },
   "dependencies": {
     "@babel/runtime": "^7.1.2",
