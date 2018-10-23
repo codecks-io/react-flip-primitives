@@ -7,33 +7,50 @@ import Text from "./Text";
 const ExpandText = ({flipKey, registerNode, preview, children, isActive, onClick}) => (
   <FlipGroup changeKey={isActive} durationMs={500}>
     {registerInnerNode => (
-      <div ref={registerNode(`container-${flipKey}`, {scaleMode: "none"})}>
-        <div>{preview}</div>
-        <OnOff
-          registerNode={registerInnerNode}
-          keyAndData={isActive ? {key: flipKey, data: children} : null}
-          enterPositionStyle={{height: 1}}
-          enterDecorationStyle={{opacity: 0}}
-          leaveStyle={{height: 1, opacity: 0}}
+      <div ref={registerNode(`outer-container-${flipKey}`, {scaleMode: "immediate"})}>
+        <div
+          ref={registerNode(`container-${flipKey}`, {
+            scaleMode: "non-transform",
+            positionMode: "none",
+          })}
+          style={{
+            backgroundColor: "#fafafa",
+            boxShadow: "0 0 15px rgba(0,0,0,0.2)",
+            marginBottom: 20,
+            overflow: "hidden",
+          }}
         >
-          {(key, data, registerEnterLeave) =>
-            key && (
-              <div
-                key={key}
-                ref={registerEnterLeave(key, {
-                  positionMode: "none",
-                  transitionProps: ["opacity"],
-                })}
-                style={{overflow: "hidden"}}
+          <div style={{padding: 20}}>
+            <div>{preview}</div>
+            <div style={{position: "relative"}}>
+              <OnOff
+                registerNode={registerInnerNode}
+                keyAndData={isActive ? {key: flipKey, data: children} : null}
+                enterPositionStyle={{height: 1}}
+                enterDecorationStyle={{opacity: 0}}
+                leaveStyle={{height: 1, opacity: 0}}
               >
-                {data}
-              </div>
-            )
-          }
-        </OnOff>
-        <button ref={registerInnerNode(`button`)} onClick={onClick}>
-          {isActive ? "collapse" : "expand"}
-        </button>
+                {(key, data, registerEnterLeave) =>
+                  key && (
+                    <div
+                      key={key}
+                      ref={registerEnterLeave(key, {
+                        positionMode: "none",
+                        transitionProps: ["opacity"],
+                      })}
+                      style={{overflow: "hidden"}}
+                    >
+                      {data}
+                    </div>
+                  )
+                }
+              </OnOff>
+            </div>
+            <button ref={registerInnerNode(`button`)} onClick={onClick}>
+              {isActive ? "collapse" : "expand"}
+            </button>
+          </div>
+        </div>
       </div>
     )}
   </FlipGroup>
