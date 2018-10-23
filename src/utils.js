@@ -45,18 +45,17 @@ const isUnitlessNumber = {
   strokeMiterlimit: true,
   strokeOpacity: true,
   strokeWidth: true,
-}
+};
 
 export const setStylesAndCreateResetter = (node, styles) => {
-  const orgStyles = {}
+  const orgStyles = {};
   Object.entries(styles).forEach(([prop, val]) => {
-    orgStyles[prop] = node.style[prop]
-    node.style[prop] =
-      typeof val === 'number' && !isUnitlessNumber[prop] ? `${val}px` : val
-  })
+    orgStyles[prop] = node.style[prop];
+    node.style[prop] = typeof val === "number" && !isUnitlessNumber[prop] ? `${val}px` : val;
+  });
   return () => {
     Object.entries(orgStyles).forEach(([prop, val]) => {
-      node.style[prop] = val
-    })
-  }
-}
+      node.style[prop] = val;
+    });
+  };
+};

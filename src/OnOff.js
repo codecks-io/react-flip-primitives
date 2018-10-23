@@ -1,6 +1,6 @@
-import React from 'react'
-import PropTypes from 'prop-types'
-import EnterLeaveGroup from './EnterLeaveGroup'
+import React from "react";
+import PropTypes from "prop-types";
+import EnterLeaveGroup from "./EnterLeaveGroup";
 
 export default class OnOff extends React.Component {
   static propTypes = {
@@ -13,7 +13,7 @@ export default class OnOff extends React.Component {
     leaveStyle: PropTypes.object,
     enterPositionStyle: PropTypes.object,
     enterDecorationStyle: PropTypes.object,
-  }
+  };
 
   render() {
     const {
@@ -23,7 +23,7 @@ export default class OnOff extends React.Component {
       enterPositionStyle,
       enterDecorationStyle,
       leaveStyle,
-    } = this.props
+    } = this.props;
     return (
       <EnterLeaveGroup
         registerNode={registerNode}
@@ -34,14 +34,10 @@ export default class OnOff extends React.Component {
       >
         {(keysAndData, registerEnterLeave) =>
           keysAndData.length
-            ? children(
-                keysAndData[0].key,
-                keysAndData[0].data,
-                registerEnterLeave,
-              )
+            ? children(keysAndData[0].key, keysAndData[0].data, registerEnterLeave)
             : children(null, null, registerEnterLeave)
         }
       </EnterLeaveGroup>
-    )
+    );
   }
 }

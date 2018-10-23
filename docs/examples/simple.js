@@ -1,9 +1,9 @@
-import React from 'react'
-import {Set} from 'react-powerplug'
-import PropTypes from 'prop-types'
-import {FlipGroup} from '../../src/index'
-import styles from '../styles.module.css'
-import Text from './Text'
+import React from "react";
+import {Set} from "react-powerplug";
+import PropTypes from "prop-types";
+import {FlipGroup} from "../../src/index";
+import styles from "../styles.module.css";
+import Text from "./Text";
 
 const ExpandText = ({
   flipKey,
@@ -15,31 +15,28 @@ const ExpandText = ({
 }) => (
   <FlipGroup changeKey={isActive} durationMs={500}>
     {registerInnerNode => (
-      <div
-        className={styles.container}
-        ref={registerOuterNode(flipKey, {scaleMode: 'none'})}
-      >
+      <div className={styles.container} ref={registerOuterNode(flipKey, {scaleMode: "none"})}>
         <div>{preview}</div>
         <div
           className={styles.more}
           style={{
-            height: isActive ? 'auto' : 50,
+            height: isActive ? "auto" : 50,
             opacity: isActive ? 1 : 0.5,
-            overflow: 'hidden',
+            overflow: "hidden",
           }}
           ref={registerInnerNode(`preview-${flipKey}`, {
-            transitionProps: ['opacity'],
+            transitionProps: ["opacity"],
           })}
         >
           {children}
         </div>
         <button onClick={onClick} ref={registerInnerNode(`button-${flipKey}`)}>
-          {isActive ? 'collapse' : 'expand'}
+          {isActive ? "collapse" : "expand"}
         </button>
       </div>
     )}
   </FlipGroup>
-)
+);
 
 ExpandText.propTypes = {
   flipKey: PropTypes.any,
@@ -48,17 +45,17 @@ ExpandText.propTypes = {
   children: PropTypes.any,
   isActive: PropTypes.any,
   onClick: PropTypes.any,
-}
+};
 
 const Simple = () => (
   <Set>
     {({values, add, remove, has}) => (
-      <FlipGroup changeKey={values.join('-')} durationMs={500}>
+      <FlipGroup changeKey={values.join("-")} durationMs={500}>
         {registerNode => (
           <React.Fragment>
             <ExpandText
-              isActive={has('text1')}
-              onClick={() => (has('text1') ? remove('text1') : add('text1'))}
+              isActive={has("text1")}
+              onClick={() => (has("text1") ? remove("text1") : add("text1"))}
               flipKey="text1"
               registerNode={registerNode}
               preview={<h2>Some heading</h2>}
@@ -66,8 +63,8 @@ const Simple = () => (
               <Text />
             </ExpandText>
             <ExpandText
-              isActive={has('text2')}
-              onClick={() => (has('text2') ? remove('text2') : add('text2'))}
+              isActive={has("text2")}
+              onClick={() => (has("text2") ? remove("text2") : add("text2"))}
               flipKey="text2"
               registerNode={registerNode}
               preview={<h2>Some other Heading</h2>}
@@ -79,6 +76,6 @@ const Simple = () => (
       </FlipGroup>
     )}
   </Set>
-)
+);
 
-export default Simple
+export default Simple;

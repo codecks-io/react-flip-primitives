@@ -1,2 +1,5 @@
-// this is really only here for editor integrations
-module.exports = require('kcd-scripts/prettier')
+module.exports = {
+  trailingComma: "es5",
+  printWidth: 100,
+  bracketSpacing: false,
+};

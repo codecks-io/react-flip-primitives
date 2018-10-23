@@ -1,20 +1,13 @@
-import React from 'react'
-import {Set} from 'react-powerplug'
-import PropTypes from 'prop-types'
-import {OnOff, FlipGroup} from '../../src/index'
-import Text from './Text'
+import React from "react";
+import {Set} from "react-powerplug";
+import PropTypes from "prop-types";
+import {OnOff, FlipGroup} from "../../src/index";
+import Text from "./Text";
 
-const ExpandText = ({
-  flipKey,
-  registerNode,
-  preview,
-  children,
-  isActive,
-  onClick,
-}) => (
+const ExpandText = ({flipKey, registerNode, preview, children, isActive, onClick}) => (
   <FlipGroup changeKey={isActive} durationMs={500}>
     {registerInnerNode => (
-      <div ref={registerNode(`container-${flipKey}`, {scaleMode: 'none'})}>
+      <div ref={registerNode(`container-${flipKey}`, {scaleMode: "none"})}>
         <div>{preview}</div>
         <OnOff
           registerNode={registerInnerNode}
@@ -28,10 +21,10 @@ const ExpandText = ({
               <div
                 key={key}
                 ref={registerEnterLeave(key, {
-                  positionMode: 'none',
-                  transitionProps: ['opacity'],
+                  positionMode: "none",
+                  transitionProps: ["opacity"],
                 })}
-                style={{overflow: 'hidden'}}
+                style={{overflow: "hidden"}}
               >
                 {data}
               </div>
@@ -39,12 +32,12 @@ const ExpandText = ({
           }
         </OnOff>
         <button ref={registerInnerNode(`button`)} onClick={onClick}>
-          {isActive ? 'collapse' : 'expand'}
+          {isActive ? "collapse" : "expand"}
         </button>
       </div>
     )}
   </FlipGroup>
-)
+);
 
 ExpandText.propTypes = {
   flipKey: PropTypes.any,
@@ -53,21 +46,17 @@ ExpandText.propTypes = {
   children: PropTypes.any,
   isActive: PropTypes.any,
   onClick: PropTypes.any,
-}
+};
 
 const EnterLeave = () => (
   <Set>
     {({values, add, remove, has}) => (
-      <FlipGroup
-        changeKey={values.join('-')}
-        durationMs={500}
-        noAnimationOnMount
-      >
+      <FlipGroup changeKey={values.join("-")} durationMs={500}>
         {registerNode => (
           <React.Fragment>
             <ExpandText
-              isActive={has('text1')}
-              onClick={() => (has('text1') ? remove('text1') : add('text1'))}
+              isActive={has("text1")}
+              onClick={() => (has("text1") ? remove("text1") : add("text1"))}
               flipKey="text1"
               registerNode={registerNode}
               preview={<h2>Enter Leave</h2>}
@@ -75,8 +64,8 @@ const EnterLeave = () => (
               <Text />
             </ExpandText>
             <ExpandText
-              isActive={has('text2')}
-              onClick={() => (has('text2') ? remove('text2') : add('text2'))}
+              isActive={has("text2")}
+              onClick={() => (has("text2") ? remove("text2") : add("text2"))}
               flipKey="text2"
               registerNode={registerNode}
               preview={<h2>Enter Leave 2</h2>}
@@ -88,6 +77,6 @@ const EnterLeave = () => (
       </FlipGroup>
     )}
   </Set>
-)
+);
 
-export default EnterLeave
+export default EnterLeave;

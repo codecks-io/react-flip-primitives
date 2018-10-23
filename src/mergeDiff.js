@@ -20,32 +20,32 @@ export default function mergeDiff(prev, next, onRemove, onAdd) {
   // bookkeeping for easier access of a key's index below. This is 2 allocations +
   // potentially triggering chrome hash map mode for objs (so it might be faster
   // to loop through and find a key's index each time), but I no longer care
-  const prevKeyIndex = {}
+  const prevKeyIndex = {};
   for (let i = 0; i < prev.length; i++) {
-    prevKeyIndex[prev[i].key] = i
+    prevKeyIndex[prev[i].key] = i;
   }
-  const nextKeyIndex = {}
+  const nextKeyIndex = {};
   for (let i = 0; i < next.length; i++) {
-    nextKeyIndex[next[i].key] = i
+    nextKeyIndex[next[i].key] = i;
   }
 
   // first, an overly elaborate way of merging prev and next, eliminating
   // duplicates (in terms of keys). If there's dupe, keep the item in next).
   // This way of writing it saves allocations
-  const ret = []
+  const ret = [];
   for (let i = 0; i < next.length; i++) {
-    ret[i] = next[i]
+    ret[i] = next[i];
     if (!Object.prototype.hasOwnProperty.call(prevKeyIndex, next[i].key)) {
-      onAdd(i, next[i])
+      onAdd(i, next[i]);
     }
   }
   for (let i = 0; i < prev.length; i++) {
     if (!Object.prototype.hasOwnProperty.call(nextKeyIndex, prev[i].key)) {
       // this is called my TM's `mergeAndSync`, which calls willLeave. We don't
       // merge in keys that the user desires to kill
-      const fill = onRemove(i, prev[i])
+      const fill = onRemove(i, prev[i]);
       if (fill != null) {
-        ret.push(fill)
+        ret.push(fill);
       }
     }
   }
@@ -53,17 +53,17 @@ export default function mergeDiff(prev, next, onRemove, onAdd) {
   // now all the items all present. Core sorting logic to have the right order
   // eslint-disable-next-line
   return ret.sort((a, b) => {
-    const nextOrderA = nextKeyIndex[a.key]
-    const nextOrderB = nextKeyIndex[b.key]
-    const prevOrderA = prevKeyIndex[a.key]
-    const prevOrderB = prevKeyIndex[b.key]
+    const nextOrderA = nextKeyIndex[a.key];
+    const nextOrderB = nextKeyIndex[b.key];
+    const prevOrderA = prevKeyIndex[a.key];
+    const prevOrderB = prevKeyIndex[b.key];
 
     if (nextOrderA != null && nextOrderB != null) {
       // both keys in next
-      return nextKeyIndex[a.key] - nextKeyIndex[b.key]
+      return nextKeyIndex[a.key] - nextKeyIndex[b.key];
     } else if (prevOrderA != null && prevOrderB != null) {
       // both keys in prev
-      return prevKeyIndex[a.key] - prevKeyIndex[b.key]
+      return prevKeyIndex[a.key] - prevKeyIndex[b.key];
     } else if (nextOrderA != null) {
       // key a in next, key b in prev
 
@@ -72,47 +72,35 @@ export default function mergeDiff(prev, next, onRemove, onAdd) {
       // a and b. In the context of our above example, if we're comparing a and
       // d, b's (the only) pivot
       for (let i = 0; i < next.length; i++) {
-        const pivot = next[i].key
+        const pivot = next[i].key;
         if (!Object.prototype.hasOwnProperty.call(prevKeyIndex, pivot)) {
           // eslint-disable-next-line
-          continue
+          continue;
         }
 
-        if (
-          nextOrderA < nextKeyIndex[pivot] &&
-          prevOrderB > prevKeyIndex[pivot]
-        ) {
-          return -1
-        } else if (
-          nextOrderA > nextKeyIndex[pivot] &&
-          prevOrderB < prevKeyIndex[pivot]
-        ) {
-          return 1
+        if (nextOrderA < nextKeyIndex[pivot] && prevOrderB > prevKeyIndex[pivot]) {
+          return -1;
+        } else if (nextOrderA > nextKeyIndex[pivot] && prevOrderB < prevKeyIndex[pivot]) {
+          return 1;
         }
       }
       // pluggable. default to: next bigger than prev
-      return 1
+      return 1;
     }
     // prevOrderA, nextOrderB
     for (let i = 0; i < next.length; i++) {
-      const pivot = next[i].key
+      const pivot = next[i].key;
       if (!Object.prototype.hasOwnProperty.call(prevKeyIndex, pivot)) {
         // eslint-disable-next-line
-        continue
+        continue;
       }
-      if (
-        nextOrderB < nextKeyIndex[pivot] &&
-        prevOrderA > prevKeyIndex[pivot]
-      ) {
-        return 1
-      } else if (
-        nextOrderB > nextKeyIndex[pivot] &&
-        prevOrderA < prevKeyIndex[pivot]
-      ) {
-        return -1
+      if (nextOrderB < nextKeyIndex[pivot] && prevOrderA > prevKeyIndex[pivot]) {
+        return 1;
+      } else if (nextOrderB > nextKeyIndex[pivot] && prevOrderA < prevKeyIndex[pivot]) {
+        return -1;
       }
     }
     // pluggable. default to: next bigger than prev
-    return -1
-  })
+    return -1;
+  });
 }

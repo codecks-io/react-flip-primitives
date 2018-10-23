@@ -1,11 +1,11 @@
-import {css} from 'docz-plugin-css'
+import {css} from "docz-plugin-css";
 
 export default {
-  src: 'docs',
+  src: "docs",
   plugins: [
     css({
-      preprocessor: 'postcss',
+      preprocessor: "postcss",
       cssmodules: true,
     }),
   ],
-}
+};
