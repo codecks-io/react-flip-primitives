@@ -1,12 +1,20 @@
 {
   "name": "react-flip-primitives",
   "version": "0.1.0",
+  "description": "Building Blocks for Blazing Fast CSS based Animations",
+  "keywords": [
+    "react",
+    "flip",
+    "animation",
+    "css-transition"
+  ],
   "main": "dist/cjs/index.js",
   "module": "dist/es/index.js",
   "files": [
     "dist"
   ],
-  "author": "Daniel Berndt",
+  "repository": "https://github.com/danielberndt/react-flip-primitives",
+  "author": "Daniel Berndt <daniel.berndt@gmail.com>",
   "license": "MIT",
   "scripts": {
     "build": "db-scripts-bundle --size-snapshot",
