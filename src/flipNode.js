@@ -73,7 +73,6 @@ const getTransitions = ({nodeInfo, prevRect, currentRect}, {durationMs, timingFu
   animateNodes.forEach(({width, height, inverse}, node) => {
     const orgAnimation = node.style.animation;
     const {name, inverseName} = getAnimationNames(timingFunction, width, height);
-    console.log("name, inverseName", name, inverseName);
     node.style.animation = `${inverse ? inverseName : name} ${durationMs}ms linear ${
       nodeInfo.opts.delayMs
     }ms`;
