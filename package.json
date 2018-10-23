@@ -1,6 +1,6 @@
 {
   "name": "react-flip-primitives",
-  "version": "0.1.0",
+  "version": "0.0.1",
   "description": "Building Blocks for Blazing Fast CSS based Animations",
   "keywords": [
     "react",
@@ -21,7 +21,8 @@
     "lint": "eslint src *.js",
     "setup": "npm install && npm run validate -s",
     "docz:dev": "docz dev",
-    "docz:build": "docz build"
+    "docz:build": "docz build",
+    "prepublish": "npm run build"
   },
   "devDependencies": {
     "@db-scripts/bundle": "0.1.0",
