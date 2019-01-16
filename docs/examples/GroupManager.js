@@ -14,7 +14,7 @@ export default class GroupManager extends React.Component {
     const items = [];
     // for (let i = 0; i < itemCount; i++) groups[Math.floor(Math.random() * groupCount)].push(i);
     for (let i = 0; i < itemCount; i++) items.push({id: i, groupIndex: 0});
-    this.nextId = itemCount;
+    this.nextId = itemCount - 1;
     this.state = {items};
   }
 
@@ -37,9 +37,8 @@ export default class GroupManager extends React.Component {
     const {groupCount} = this.props;
     const newGroupIndex =
       (item.groupIndex + Math.floor(Math.random() * (groupCount - 1)) + 1) % groupCount;
-    console.log({prev: item.groupIndex, next: newGroupIndex});
     this.setState({
-      items: items.map(i => (item.id === i.id ? {...item, groupIndex: newGroupIndex} : item)),
+      items: items.map(i => (item.id === i.id ? {...i, groupIndex: newGroupIndex} : i)),
     });
   };
 

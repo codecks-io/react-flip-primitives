@@ -24,7 +24,7 @@ import GroupManager from "./GroupManager.js";
         return (
           <React.Fragment>
           {groups.map((group, gi) => (
-            <div key={gi} ref={registerNode(`group-${gi}`, {scaleMode: "none"})}>
+            <div key={gi} ref={registerNode(`group_${gi}`, {scaleMode: "none"})}>
               <h2>Group {gi}</h2>
               <div style={{display: "flex", flexWrap: "wrap"}}>
                 {group.map((item) => (
@@ -39,9 +39,11 @@ import GroupManager from "./GroupManager.js";
                     }}
                     ref={registerNode(item.id, {
                       transitionProps: ["background-color", "opacity"],
+                      parentFlipKey: `group_${gi}`
                     })}
                   >
                     <button onClick={() => swapItem(item)}>swap</button>
+                    {item.id}
                   </div>
                 ))}
               </div>

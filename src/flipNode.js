@@ -7,7 +7,10 @@ import {setStylesAndCreateResetter} from "./utils";
 export const convertMatrix3dArrayTo2dArray = matrix =>
   [0, 1, 4, 5, 12, 13].map(index => matrix[index]);
 
-const getTransitions = ({nodeInfo, prevRect, currentRect}, {durationMs, timingFunction}) => {
+const getTransitions = (
+  {nodeInfo, prevRect, currentRect, parentRects},
+  {durationMs, timingFunction}
+) => {
   const {opts} = nodeInfo;
   const nodeData = new Map();
   const getNodeData = node => {
@@ -26,8 +29,12 @@ const getTransitions = ({nodeInfo, prevRect, currentRect}, {durationMs, timingFu
   ];
   dimensions.forEach(({dim, scaleFn, translateFn, attr}) => {
     if (opts.positionMode !== "none") {
-      if (prevRect[attr] !== currentRect[attr]) {
-        getNodeData(nodeInfo.node).transforms.push(translateFn(prevRect[attr] - currentRect[attr]));
+      const parentDiff = parentRects
+        ? parentRects.currentRect[attr] - parentRects.prevRect[attr]
+        : 0;
+      const diff = parentDiff + prevRect[attr] - currentRect[attr];
+      if (diff !== 0) {
+        getNodeData(nodeInfo.node).transforms.push(translateFn(diff));
       }
     }
     if (prevRect[dim] !== currentRect[dim]) {
@@ -93,8 +100,11 @@ const getTransitions = ({nodeInfo, prevRect, currentRect}, {durationMs, timingFu
   return actions;
 };
 
-const flipNode = ({nodeInfo, prevRect, currentRect}, {durationMs, timingFunction}) => {
-  const actions = getTransitions({nodeInfo, prevRect, currentRect}, {durationMs, timingFunction});
+const flipNode = ({nodeInfo, prevRect, currentRect, parentRects}, {durationMs, timingFunction}) => {
+  const actions = getTransitions(
+    {nodeInfo, prevRect, currentRect, parentRects},
+    {durationMs, timingFunction}
+  );
 
   return () => {
     actions.onReadyForTransition.forEach(reset => reset());
