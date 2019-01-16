@@ -1,0 +1,60 @@
+---
+name: Transfer Cards
+---
+
+import {FlipGroup} from "../../src/index";
+import GroupManager from "./GroupManager.js";
+
+<GroupManager groupCount={2} itemCount={1}>
+  {({items, addItem, swapItem}) => (
+    <FlipGroup
+      noAnimationOnMount
+      changeKey={items.map(({id, groupIndex}) => `${groupIndex}_${id}`).join("-")}
+      durationMs={500}
+      keysAndData={items.map(item => ({key: item.id.toString(), data: item}))}
+      enterDecorationStyle={{opacity: 0}}
+      enterPositionStyle={{width: 1}}
+      leaveStyle={{opacity: 0, width: 1}}
+    >
+      {(registerNode, keysAndData) => {
+        const groups = [[], []];
+        keysAndData.forEach(({data}) => {
+          (groups[data.groupIndex] = groups[data.groupIndex] || []).push(data)
+        })
+        return (
+          <React.Fragment>
+          {groups.map((group, gi) => (
+            <div key={gi} ref={registerNode(`group-${gi}`, {scaleMode: "none"})}>
+              <h2>Group {gi}</h2>
+              <div style={{display: "flex", flexWrap: "wrap"}}>
+                {group.map((item) => (
+                  <div
+                    key={item.id}
+                    style={{
+                      width: 200,
+                      height: 50,
+                      backgroundColor: `hsl(${item.id * 5}, 50%, 50%)`,
+                      margin: "0 10px 20px",
+                      opacity: 1,
+                    }}
+                    ref={registerNode(item.id, {
+                      transitionProps: ["background-color", "opacity"],
+                    })}
+                  >
+                    <button onClick={() => swapItem(item)}>swap</button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+
+          <button onClick={addItem} ref={registerNode("button")}>
+            addItem
+          </button>
+        </React.Fragment>
+      )}}
+    </FlipGroup>
+
+)}
+
+</GroupManager>
