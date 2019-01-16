@@ -5,7 +5,7 @@ name: Transfer Cards
 import {FlipGroup} from "../../src/index";
 import GroupManager from "./GroupManager.js";
 
-<GroupManager groupCount={2} itemCount={1}>
+<GroupManager groupCount={4} itemCount={15}>
   {({items, addItem, swapItem}) => (
     <FlipGroup
       noAnimationOnMount
@@ -17,7 +17,7 @@ import GroupManager from "./GroupManager.js";
       leaveStyle={{opacity: 0, width: 1}}
     >
       {(registerNode, keysAndData) => {
-        const groups = [[], []];
+        const groups = Array.from(new Array(4), () => []);
         keysAndData.forEach(({data}) => {
           (groups[data.groupIndex] = groups[data.groupIndex] || []).push(data)
         })

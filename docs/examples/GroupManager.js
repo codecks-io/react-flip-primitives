@@ -12,8 +12,9 @@ export default class GroupManager extends React.Component {
     super(props);
     const {groupCount, itemCount} = props;
     const items = [];
-    // for (let i = 0; i < itemCount; i++) groups[Math.floor(Math.random() * groupCount)].push(i);
-    for (let i = 0; i < itemCount; i++) items.push({id: i, groupIndex: 0});
+    for (let i = 0; i < itemCount; i++) {
+      items.push({id: i, groupIndex: Math.floor(Math.random() * groupCount)});
+    }
     this.nextId = itemCount - 1;
     this.state = {items};
   }
