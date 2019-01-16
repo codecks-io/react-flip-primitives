@@ -27,7 +27,7 @@ import FlipGroup from "react-flip-primitives"
 * Follows the advice outlined in this [google developer post](https://developers.google.com/web/updates/2017/03/performant-expand-and-collapse)
 * All transitions are pure CSS transitions
 * Allow enter and leave animations inspired by `react-motion`'s [`TransitionMotion`](https://github.com/chenglou/react-motion#transitionmotion-)
-* Fairly small. Including all its dependencies it weighs in at `~12KB minifed` or `~4KB` gzipped
+* Fairly small. Including all its dependencies it weighs in at `~11KB minifed` or `~4KB` gzipped
 
 ## Api
 

@@ -1,6 +1,5 @@
 import React from "react";
 import PropTypes from "prop-types";
-import toposort from "toposort";
 import {setStylesAndCreateResetter} from "./utils";
 import flipNode from "./flipNode";
 import mergeDiff from "./mergeDiff";
@@ -75,8 +74,6 @@ export default class FlipGroup extends React.Component {
   }
   */
     this.nodeInfoPerKey = {};
-    this.orderedNodes = [];
-    this.needTopoSort = false;
   }
 
   getOrCreateHandlerForKey = (key, userOpts) => {
@@ -94,7 +91,6 @@ export default class FlipGroup extends React.Component {
         if (newVal.currentTransition) newVal.currentTransition.clearTimeout();
         newVal.node = node;
         if (node) {
-          if (opts.parentFlipKey) this.needTopoSort = true;
           if (process.env.NODE_ENV !== "production") {
             const cStyle = getComputedStyle(node, null);
             const existingTransition = cStyle.getPropertyValue("transition") || "none";
@@ -116,37 +112,17 @@ export default class FlipGroup extends React.Component {
       currentTransition: null,
     };
     this.nodeInfoPerKey[key] = newVal;
-    this.orderedNodes.push(newVal);
     return newVal.handler;
   };
 
   registerNode = (key, opts = {}) => {
-    return this.getOrCreateHandlerForKey(key, opts);
+    return this.getOrCreateHandlerForKey(key.toString(), opts);
   };
 
   getSnapshotBeforeUpdate(prevProps) {
     if (prevProps.changeKey === this.props.changeKey) return null;
     const measuredNodes = {};
-    if (this.needTopoSort) {
-      const edges = [];
-      this.orderedNodes.forEach(nodeInfo => {
-        const {key, opts} = nodeInfo;
-        if (opts.parentFlipKey) {
-          const parent = this.nodeInfoPerKey[opts.parentFlipKey];
-          if (parent) {
-            edges.push([parent, nodeInfo]);
-          } else if (process.env.NODE_ENV !== "production") {
-            // eslint-disable-next-line no-console
-            console.warn(
-              `Couldn't find parentFlipKey: "${opts.parentFlipKey}" required by "${key}"`
-            );
-          }
-        }
-      });
-      this.orderedNodes = toposort.array(this.orderedNodes, edges);
-      this.needTopoSort = false;
-    }
-    const nodeInfos = this.orderedNodes;
+    const nodeInfos = Object.values(this.nodeInfoPerKey);
     nodeInfos.forEach(({key, node}) => {
       if (node) measuredNodes[key] = node.getBoundingClientRect();
     });
@@ -244,7 +220,6 @@ export default class FlipGroup extends React.Component {
           }));
           nodeInfo.leaving = null;
           delete this.nodeInfoPerKey[nodeInfo.key];
-          this.orderedNodes.splice(this.orderedNodes.indexOf(nodeInfo), 1);
         },
         abortLeaving: () => {
           originalStyle();
@@ -260,7 +235,7 @@ export default class FlipGroup extends React.Component {
     const {leavingKeys} = this.state;
     const enteringNodes = [];
     const leavingNodes = [];
-    const nodeInfos = this.orderedNodes;
+    const nodeInfos = Object.values(this.nodeInfoPerKey);
     nodeInfos.forEach(nodeInfo => {
       if (this.isEnteringNode(nodeInfo.key, measuredNodes)) {
         enteringNodes.push(nodeInfo);
@@ -274,21 +249,35 @@ export default class FlipGroup extends React.Component {
     this.styleLeavingAndRemoveFromFlow(leavingNodes, measuredNodes);
     const resetEnterStyles = this.styleEntering(measuredNodes, enteringNodes);
     const currentRects = {};
+    const positionsWithParents = [];
     nodeInfos.forEach(nodeInfo => {
       if (nodeInfo.node && measuredNodes[nodeInfo.key]) {
-        const parent =
-          nodeInfo.opts.parentFlipKey && this.nodeInfoPerKey[nodeInfo.opts.parentFlipKey];
         const currentRect = nodeInfo.node.getBoundingClientRect();
         currentRects[nodeInfo.key] = currentRect;
-        newPositions.push({
+        const newPosition = {
           nodeInfo,
           prevRect: measuredNodes[nodeInfo.key],
           currentRect,
-          parentRects: parent && {
-            prevRect: measuredNodes[parent.key],
-            currentRect: currentRects[parent.key],
-          },
-        });
+          parentRects: null,
+        };
+        newPositions.push(newPosition);
+        if (nodeInfo.opts.parentFlipKey) positionsWithParents.push(newPosition);
+      }
+    });
+
+    positionsWithParents.forEach(position => {
+      const {
+        nodeInfo: {opts, key},
+      } = position;
+      const parent = this.nodeInfoPerKey[opts.parentFlipKey];
+      if (parent) {
+        position.parentRects = {
+          prevRect: measuredNodes[parent.key],
+          currentRect: currentRects[parent.key],
+        };
+      } else if (process.env.NODE_ENV !== "production") {
+        // eslint-disable-next-line no-console
+        console.warn(`Couldn't find parentFlipKey: "${opts.parentFlipKey}" required by "${key}"`);
       }
     });
 

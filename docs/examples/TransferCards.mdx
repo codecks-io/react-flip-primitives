@@ -2,11 +2,11 @@
 name: Transfer Cards
 ---
 
-import {FlipGroup} from "../../src/index";
+import FlipGroup from "../../src/index";
 import GroupManager from "./GroupManager.js";
 
-<GroupManager groupCount={4} itemCount={15}>
-  {({items, addItem, swapItem}) => (
+<GroupManager groupCount={2} itemCount={1}>
+  {({items, addItem, removeItem, swapItem}) => (
     <FlipGroup
       noAnimationOnMount
       changeKey={items.map(({id, groupIndex}) => `${groupIndex}_${id}`).join("-")}
@@ -14,10 +14,10 @@ import GroupManager from "./GroupManager.js";
       keysAndData={items.map(item => ({key: item.id.toString(), data: item}))}
       enterDecorationStyle={{opacity: 0}}
       enterPositionStyle={{width: 1}}
-      leaveStyle={{opacity: 0, width: 1}}
+      leaveStyle={{opacity: 0}}
     >
       {(registerNode, keysAndData) => {
-        const groups = Array.from(new Array(4), () => []);
+        const groups = Array.from(new Array(2), () => []);
         keysAndData.forEach(({data}) => {
           (groups[data.groupIndex] = groups[data.groupIndex] || []).push(data)
         })
@@ -43,6 +43,7 @@ import GroupManager from "./GroupManager.js";
                     })}
                   >
                     <button onClick={() => swapItem(item)}>swap</button>
+                    <button onClick={() => removeItem(item)}>remove</button>
                     {item.id}
                   </div>
                 ))}
