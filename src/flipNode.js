@@ -1,5 +1,4 @@
 import {translateX, translateY, scaleX, scaleY, multiply, toString} from "rematrix";
-import getAnimationNames from "./animations";
 import {setStylesAndCreateResetter} from "./utils";
 
 // 3d transforms were causing weird issues in chrome,
@@ -15,7 +14,6 @@ const getTransitions = ({nodeInfo, prevRect, currentRect}, {durationMs, timingFu
     const ex = nodeData.get(node);
     if (ex) return ex;
     const newNodeData = {
-      animation: {width: 1, height: 1, inverse: false},
       transforms: [],
       props: [], // {kind: 'width', start: 12, end: 20}
     };
@@ -47,15 +45,7 @@ const getTransitions = ({nodeInfo, prevRect, currentRect}, {durationMs, timingFu
         });
       } else if (opts.scaleMode !== "none") {
         const ratio = Math.max(prevRect[dim], 1) / Math.max(currentRect[dim], 1);
-        if (opts.scaleMode === "transform-no-children" || !nodeInfo.node.children.length) {
-          getNodeData(nodeInfo.node).transforms.push(scaleFn(ratio));
-        } else {
-          getNodeData(nodeInfo.node).animation[dim] = ratio;
-          for (const childNode of nodeInfo.node.children) {
-            getNodeData(childNode).animation[dim] = ratio;
-            getNodeData(childNode).animation.inverse = true;
-          }
-        }
+        getNodeData(nodeInfo.node).transforms.push(scaleFn(ratio));
       }
     }
   });
@@ -96,20 +86,6 @@ const getTransitions = ({nodeInfo, prevRect, currentRect}, {durationMs, timingFu
           reset();
           node.style.transition = orgTransition;
         });
-      });
-    }
-    if (data.animation.width !== 1 || data.animation.height !== 1) {
-      const {width, height, inverse} = data.animation;
-      const orgAnimation = node.style.animation;
-      const {name, inverseName} = getAnimationNames(timingFunction, width, height);
-      node.style.animation = `${inverse ? inverseName : name} ${durationMs}ms linear ${
-        nodeInfo.opts.delayMs
-      }ms`;
-      const orgTransformOrigin = node.style;
-      node.style.transformOrigin = "0px 0px 0px";
-      actions.onTransitionDone.push(() => {
-        node.style.animation = orgAnimation;
-        node.style.transformOrigin = orgTransformOrigin;
       });
     }
   });

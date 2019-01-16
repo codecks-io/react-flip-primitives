@@ -26,9 +26,8 @@ import {FlipGroup} from "react-flip-primitives"
 
 * Follows the advice outlined in this [google developer post](https://developers.google.com/web/updates/2017/03/performant-expand-and-collapse)
 * All transitions are pure CSS transitions
-  - Automatically creates (and re-uses) animations for inverting scale transforms
 * Helper Method to allow enter and leave animations inspired by `react-motion`'s [`TransitionMotion`](https://github.com/chenglou/react-motion#transitionmotion-)
-* Fairly small. Including all its dependencies it weighs in at `~14KB minifed` or `~5KB` gzipped
+* Fairly small. Including all its dependencies it weighs in at `~12KB minifed` or `~4KB` gzipped
 
 ## Api
 
@@ -72,10 +71,9 @@ The `FlipGroup` manages all nodes that are affected by a specific state change. 
 
   Defines how the node behaves if the dimensions of a node needs to change. Possible values are:
 
-  - `transform`: transition to the new dimensions via setting the corresponding `scale` `transform`. If the node has no children, it will use a somple transition. If the node has children, all children nodes will get an inverse `scale` `transform` to counter the scaling of their parent.
-  - `transform-no-children`: Don't inverse-scale the children nodes.
+  - `transform`: transition to the new dimensions via setting the corresponding `scale` `transform`.
   - `non-transform`: don't apply `transform: scale()`. Instead transition `width` and/or `height` directly. This may lead to a lot of re-layouting. So use with caution.
-  - `immediate`: immediately apply the final new dimension. This can be useful if one of its children as a `scaleMode` of `non-transform` but you want sibblings to apply their new position via transforms.
+  - `immediate`: immediately apply the final new dimension. This can be useful if one of its children has a `scaleMode` of `non-transform` but you want sibblings to apply their new position via transforms.
   - `none`: don't process to the new dimensions.
 
 - **`opts.transitionProps={string[]|default: []}`**
