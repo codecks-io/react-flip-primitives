@@ -42,7 +42,6 @@
   "dependencies": {
     "@babel/runtime": "^7.1.2",
     "prop-types": "^15.6.2",
-    "rematrix": "^0.3.0",
-    "toposort": "^2.0.2"
+    "rematrix": "^0.3.0"
   }
 }
