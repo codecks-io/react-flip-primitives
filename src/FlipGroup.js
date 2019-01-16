@@ -139,8 +139,10 @@ export default class FlipGroup extends React.Component {
     const {enteringKeys} = this.state;
     if (enteringKeys[key]) {
       if (measuredNodes[key]) {
-        // eslint-disable-next-line no-console
-        console.warn(`'${key}' is set as 'isEntering' even though it's measured already!?`);
+        if (process.env.NODE_ENV !== "production") {
+          // eslint-disable-next-line no-console
+          console.warn(`'${key}' is set as 'isEntering' even though it's measured already!?`);
+        }
         return false;
       }
       return true;
