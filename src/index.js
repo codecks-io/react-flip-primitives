@@ -1,1 +1,3 @@
-export {default as FlipGroup} from "./FlipGroup.js";
+import FlipGroup from "./FlipGroup.js";
+
+export default FlipGroup;
