@@ -74,6 +74,7 @@ export default class FlipGroup extends React.Component {
   }
   */
     this.nodeInfoPerKey = {};
+    this.cancelPendingFlip = null;
   }
 
   getOrCreateHandlerForKey = (key, userOpts) => {
@@ -232,6 +233,7 @@ export default class FlipGroup extends React.Component {
   }
 
   performUpdate(measuredNodes) {
+    if (this.cancelPendingFlip) this.cancelPendingFlip();
     const newPositions = [];
     const {durationMs, timingFunction} = this.props;
     const {leavingKeys} = this.state;
@@ -273,10 +275,9 @@ export default class FlipGroup extends React.Component {
       } = position;
       const parent = this.nodeInfoPerKey[opts.parentFlipKey];
       if (parent) {
-        position.parentRects = {
-          prevRect: measuredNodes[parent.key],
-          currentRect: currentRects[parent.key],
-        };
+        const prevRect = measuredNodes[parent.key];
+        const currentRect = currentRects[parent.key];
+        if (prevRect && currentRect) position.parentRects = {prevRect, currentRect};
       } else if (process.env.NODE_ENV !== "production") {
         // eslint-disable-next-line no-console
         console.warn(`Couldn't find parentFlipKey: "${opts.parentFlipKey}" required by "${key}"`);
@@ -284,20 +285,26 @@ export default class FlipGroup extends React.Component {
     });
 
     const nextFrameActions = newPositions.map(p => ({
-      resetFlipStyles: flipNode(p, {durationMs, timingFunction}),
+      actions: flipNode(p, {durationMs, timingFunction}),
       key: p.nodeInfo.key,
     }));
     if (nextFrameActions.length) {
       // asking for two animation frames since one frame is sometimes not enough to trigger transitions
-      requestAnimationFrame(() =>
-        requestAnimationFrame(
-          () =>
-            nextFrameActions.forEach(({resetFlipStyles}) => {
-              if (resetFlipStyles) resetFlipStyles();
-            }),
-          resetEnterStyles()
-        )
-      );
+      let rafId = requestAnimationFrame(() => {
+        rafId = requestAnimationFrame(() => {
+          nextFrameActions.forEach(({actions}) => {
+            if (actions) actions.performTransition();
+          });
+          resetEnterStyles();
+          this.cancelPendingFlip = null;
+        });
+      });
+      this.cancelPendingFlip = () => {
+        cancelAnimationFrame(rafId);
+        nextFrameActions.forEach(({actions}) => {
+          if (actions) actions.resetStyles();
+        });
+      };
     }
   }
 

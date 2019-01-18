@@ -59,6 +59,7 @@ const getTransitions = (
   const actions = {
     onReadyForTransition: [],
     onTransitionDone: [],
+    onReset: [],
   };
   nodeData.forEach((data, node) => {
     if (data.transforms.length) {
@@ -82,6 +83,7 @@ const getTransitions = (
         return m;
       }, {});
       const reset = setStylesAndCreateResetter(node, startStyles);
+      actions.onReset.push(reset);
       actions.onReadyForTransition.push(() => {
         const orgTransition = node.style.transition;
         const transitions = data.props.map(
@@ -106,22 +108,27 @@ const flipNode = ({nodeInfo, prevRect, currentRect, parentRects}, {durationMs, t
     {durationMs, timingFunction}
   );
 
-  return () => {
-    actions.onReadyForTransition.forEach(reset => reset());
-    const timeoutId = setTimeout(() => {
-      actions.onTransitionDone.forEach(reset => reset());
-      if (nodeInfo.leaving) {
-        nodeInfo.leaving.onDone();
-      }
-      nodeInfo.currentTransition = null;
-    }, durationMs + nodeInfo.opts.delayMs);
-
-    nodeInfo.currentTransition = {
-      clearTimeout: () => {
+  return {
+    performTransition: () => {
+      actions.onReadyForTransition.forEach(reset => reset());
+      const timeoutId = setTimeout(() => {
         actions.onTransitionDone.forEach(reset => reset());
-        clearTimeout(timeoutId);
-      },
-    };
+        if (nodeInfo.leaving) {
+          nodeInfo.leaving.onDone();
+        }
+        nodeInfo.currentTransition = null;
+      }, durationMs + nodeInfo.opts.delayMs);
+
+      nodeInfo.currentTransition = {
+        clearTimeout: () => {
+          actions.onTransitionDone.forEach(reset => reset());
+          clearTimeout(timeoutId);
+        },
+      };
+    },
+    resetStyles: () => {
+      actions.onReset.forEach(reset => reset());
+    },
   };
 };
 
