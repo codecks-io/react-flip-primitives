@@ -35,7 +35,7 @@ export default class FlipGroup extends React.Component {
   };
 
   static getDerivedStateFromProps(props, state) {
-    const {keysAndData, leaveStyle, enterPositionStyle, enterDecorationStyle} = props;
+    const {keysAndData, leaveStyle} = props;
     const oldKeysAndData = state.keysAndDataToRender;
     const enteringKeys = {};
     const leavingKeys = {};
@@ -43,15 +43,12 @@ export default class FlipGroup extends React.Component {
       oldKeysAndData,
       keysAndData,
       (oldKeyIndex, content) => {
-        if (!props.leaveStyle) return null;
-        leavingKeys[content.key] = leaveStyle;
+        if (!leaveStyle) return null;
+        leavingKeys[content.key] = true;
         return content;
       },
       (newKeyIndex, content) => {
-        enteringKeys[content.key] = {
-          positionStyle: enterPositionStyle,
-          decorationStyle: enterDecorationStyle,
-        };
+        enteringKeys[content.key] = true;
       }
     );
     return {keysAndDataToRender, leavingKeys, enteringKeys};
@@ -194,6 +191,7 @@ export default class FlipGroup extends React.Component {
   }
 
   styleLeavingAndRemoveFromFlow(nodes, measuredNodes) {
+    const {leaveStyle} = this.props;
     if (!nodes.length) return;
     const newPositions = [];
     nodes.forEach(nodeInfo => {
@@ -206,7 +204,7 @@ export default class FlipGroup extends React.Component {
         style: {
           width: rect.width,
           height: rect.height,
-          ...this.props.leaveStyle,
+          ...leaveStyle,
           top: nodeInfo.node.offsetTop - marginTop,
           left: nodeInfo.node.offsetLeft - marginLeft,
           position: "absolute",
@@ -304,6 +302,7 @@ export default class FlipGroup extends React.Component {
         nextFrameActions.forEach(({actions}) => {
           if (actions) actions.resetStyles();
         });
+        resetEnterStyles();
       };
     }
   }
