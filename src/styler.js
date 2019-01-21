@@ -15,7 +15,6 @@ export const styler = {
   addStyle(nodeInfo, styleName, style, {onDone, dontReset} = {}) {
     const {node, _styler} = nodeInfo;
     const {originalStyle, activeStyleNames, onDones, dontResetProps} = _styler;
-    // if (styleName === "leaving") debugger;
     Object.entries(style).forEach(([prop, val]) => {
       originalStyle[prop] = originalStyle[prop] || node.style[prop];
       if (dontReset) dontResetProps[prop] = true;

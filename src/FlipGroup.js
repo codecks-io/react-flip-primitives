@@ -176,7 +176,7 @@ export default class FlipGroup extends React.Component {
     }
   }
 
-  styleLeaving(nodes, measuredNodes) {
+  styleLeaving(nodes) {
     const {leaveStyle} = this.props;
     if (!nodes.length) return;
     const newPositions = [];
@@ -186,22 +186,14 @@ export default class FlipGroup extends React.Component {
     });
     nodes.forEach(nodeInfo => {
       const {delayMs, durationMs, timingFunction} = nodeInfo.opts;
-      const rect = measuredNodes[nodeInfo.key];
-      const cStyle = getComputedStyle(nodeInfo.node, null);
-      const marginTop = parseInt(cStyle.getPropertyValue("margin-top"), 10);
-      const marginLeft = parseInt(cStyle.getPropertyValue("margin-left"), 10);
       newPositions.push({
         nodeInfo,
         style: {
-          width: rect.width,
-          height: rect.height,
+          position: "absolute",
           ...leaveStyle,
           transition: transitionProps
             .map(prop => `${kebapCase(prop)} ${durationMs}ms ${timingFunction} ${delayMs}ms`)
             .join(", "),
-          top: nodeInfo.node.offsetTop - marginTop,
-          left: nodeInfo.node.offsetLeft - marginLeft,
-          position: "absolute",
         },
       });
     });
@@ -214,7 +206,6 @@ export default class FlipGroup extends React.Component {
           }));
         },
       });
-      debugger;
     });
   }
 
