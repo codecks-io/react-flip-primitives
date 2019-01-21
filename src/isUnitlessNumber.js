@@ -47,15 +47,4 @@ const isUnitlessNumber = {
   strokeWidth: true,
 };
 
-export const setStylesAndCreateResetter = (node, styles) => {
-  const orgStyles = {};
-  Object.entries(styles).forEach(([prop, val]) => {
-    orgStyles[prop] = node.style[prop];
-    node.style[prop] = typeof val === "number" && !isUnitlessNumber[prop] ? `${val}px` : val;
-  });
-  return () => {
-    Object.entries(orgStyles).forEach(([prop, val]) => {
-      node.style[prop] = val;
-    });
-  };
-};
+export default isUnitlessNumber;

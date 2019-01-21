@@ -90,7 +90,6 @@ The `FlipGroup` manages all nodes that are affected by a specific state change. 
 
   - `transform`: transition to the new dimensions via setting the corresponding `scale` `transform`.
   - `non-transform`: don't apply `transform: scale()`. Instead transition `width` and/or `height` directly. This may lead to a lot of re-layouting. So use with caution.
-  - `immediate`: immediately apply the final new dimension. This can be useful if one of its children has a `scaleMode` of `non-transform` but you want sibblings to apply their new position via transforms.
   - `none`: don't process to the new dimensions.
 
 - **`opts.transitionProps={string[]|default: []}`**

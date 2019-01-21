@@ -10,10 +10,8 @@ import GroupManager from "./GroupManager.js";
     <FlipGroup
       noAnimationOnMount
       changeKey={items.map(({id, groupIndex}) => `${groupIndex}_${id}`).join("-")}
-      durationMs={500}
       keysAndData={items.map(item => ({key: item.id.toString(), data: item}))}
-      enterDecorationStyle={{opacity: 0}}
-      enterPositionStyle={{width: 1}}
+      enterStyle={{opacity: 0, width: 1}}
       leaveStyle={{opacity: 0}}
     >
       {(registerNode, keysAndData) => {
@@ -24,7 +22,7 @@ import GroupManager from "./GroupManager.js";
         return (
           <React.Fragment>
           {groups.map((group, gi) => (
-            <div key={gi} ref={registerNode(`group_${gi}`, {scaleMode: "none"})}>
+            <div key={gi} ref={registerNode(`group_${gi}`, {durationMs: 5000, scaleMode: "none"})}>
               <h2>Group {gi}</h2>
               <div style={{display: "flex", flexWrap: "wrap"}}>
                 {group.map((item) => (
@@ -38,7 +36,7 @@ import GroupManager from "./GroupManager.js";
                       opacity: 1,
                     }}
                     ref={registerNode(item.id, {
-                      transitionProps: ["background-color", "opacity"],
+                      durationMs: 5000,
                       parentFlipKey: `group_${gi}`
                     })}
                   >
@@ -51,7 +49,7 @@ import GroupManager from "./GroupManager.js";
             </div>
           ))}
 
-          <button onClick={addItem} ref={registerNode("button")}>
+          <button onClick={addItem} ref={registerNode("button", {durationMs: 5000})}>
             addItem
           </button>
         </React.Fragment>

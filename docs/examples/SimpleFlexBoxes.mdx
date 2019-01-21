@@ -5,19 +5,17 @@ name: Simple Flex Boxes
 import {Value} from "react-powerplug";
 import FlipGroup from "../../src/index";
 
-<Value initial={1}>
+<Value initial={2}>
   {({value, set}) => (
     <FlipGroup
       noAnimationOnMount
       changeKey={value}
-      durationMs={1500}
       keysAndData={Array.from(new Array(value), (_, index) => ({
         key: index.toString(),
         data: 40,
       }))}
-      enterPositionStyle={{width: 1}}
-      enterDecorationStyle={{opacity: 0}}
-      leaveStyle={{opacity: 0, width: 1}}
+      enterStyle={{width: 5, opacity: 0.5}}
+      leaveStyle={{opacity: 0.3, width: 1}}
     >
       {(registerNode, keysAndData) => (
         <React.Fragment>
@@ -33,12 +31,12 @@ import FlipGroup from "../../src/index";
                   opacity: 1,
                 }}
                 ref={registerNode(key, {
-                  transitionProps: ["background-color", "opacity"],
+                  durationMs: 1500,
                 })}
               />
             ))}
           </div>
-          <div ref={registerNode("buttons")}>
+          <div ref={registerNode("buttons", {durationMs: 1500})}>
             <button onClick={() => set(value + 1)}>+1</button>
             <button onClick={() => set(value - 1)}>-1</button>
           </div>

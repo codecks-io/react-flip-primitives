@@ -1,15 +1,18 @@
 import React from "react";
 import PropTypes from "prop-types";
-import {setStylesAndCreateResetter} from "./utils";
 import flipNode from "./flipNode";
 import mergeDiff from "./mergeDiff";
+import {styler, kebapCase} from "./styler";
+import isPositionProp from "./isPositionProp";
+import isUnitlessNumber from "./isUnitlessNumber";
 
 const defaultHandlerOpts = {
   positionMode: "transform", // none | transform
   scaleMode: "transform", // none | transform | transform-no-children
-  transitionProps: [],
   setWillChange: false,
   delayMs: 0,
+  durationMs: 200,
+  timingFunction: "ease-in-out",
 };
 
 export default class FlipGroup extends React.Component {
@@ -27,11 +30,6 @@ export default class FlipGroup extends React.Component {
         data: PropTypes.any,
       })
     ),
-  };
-
-  static defaultProps = {
-    durationMs: 200,
-    timingFunction: "ease-in-out",
   };
 
   static getDerivedStateFromProps(props, state) {
@@ -61,22 +59,21 @@ export default class FlipGroup extends React.Component {
       enteringKeys: {},
       leavingKeys: {},
     };
+
     /*
-  Structure: {
-    key: {
-      key, node, handler,
-      currentTransition?: {clearTimeout, resetStyles},
-      leaving?: {onDone, abortLeaving}
+    Structure: {
+      key: {
+        key, node, handler,
+      }
     }
-  }
-  */
+    */
     this.nodeInfoPerKey = {};
     this.cancelPendingFlip = null;
   }
 
   getOrCreateHandlerForKey = (key, userOpts) => {
     const opts = {...defaultHandlerOpts, ...userOpts};
-    const existing = this.nodeInfoPerKey[key];
+    let existing = this.nodeInfoPerKey[key];
     if (existing) {
       existing.opts = opts;
       return existing.handler;
@@ -85,31 +82,16 @@ export default class FlipGroup extends React.Component {
       key,
       node: null,
       handler: node => {
-        const {durationMs, timingFunction} = this.props;
-        if (newVal.currentTransition) newVal.currentTransition.clearTimeout();
-        newVal.node = node;
         if (node) {
-          if (process.env.NODE_ENV !== "production") {
-            const cStyle = getComputedStyle(node, null);
-            const existingTransition = cStyle.getPropertyValue("transition") || "none";
-            if (!existingTransition.match(/^(none|\S+\s+0s\s+\S+\s+0s\b)/)) {
-              // eslint-disable-next-line no-console
-              console.warn(
-                `Found user-defined transition "${existingTransition}" on\b`,
-                node,
-                '\nThis will be overwritten by react-flip-primitives. Use `registerNode(key, {transitionProps: ["opacity" , ...]})` instead!'
-              );
-            }
-          }
-          node.style.transition = opts.transitionProps
-            .map(prop => `${prop} ${durationMs}ms ${timingFunction} ${opts.delayMs}ms`)
-            .join(", ");
+          newVal.node = node;
+          styler.setup(newVal);
+          this.nodeInfoPerKey[key] = newVal;
+        } else {
+          delete this.nodeInfoPerKey[key];
         }
       },
       opts,
-      currentTransition: null,
     };
-    this.nodeInfoPerKey[key] = newVal;
     return newVal.handler;
   };
 
@@ -120,81 +102,90 @@ export default class FlipGroup extends React.Component {
   getSnapshotBeforeUpdate(prevProps) {
     if (prevProps.changeKey === this.props.changeKey) return null;
     const measuredNodes = {};
+    const {leavingKeys} = this.state;
     const nodeInfos = Object.values(this.nodeInfoPerKey);
     nodeInfos.forEach(({key, node}) => {
       if (node) measuredNodes[key] = node.getBoundingClientRect();
     });
     nodeInfos.forEach(nodeInfo => {
-      if (nodeInfo.currentTransition) {
-        nodeInfo.currentTransition.clearTimeout();
-        nodeInfo.currentTransition = null;
+      if (!leavingKeys[nodeInfo.key] || !styler.hasStyle(nodeInfo, "leaving")) {
+        styler.clearStyles(nodeInfo);
       }
     });
     return measuredNodes;
   }
 
-  isEnteringNode(key, measuredNodes) {
-    const {enteringKeys} = this.state;
-    if (enteringKeys[key]) {
-      if (measuredNodes[key]) {
-        if (process.env.NODE_ENV !== "production") {
-          // eslint-disable-next-line no-console
-          console.warn(`'${key}' is set as 'isEntering' even though it's measured already!?`);
-        }
-        return false;
-      }
-      return true;
-    }
-    return false;
-  }
-
   styleEntering(measuredNodes, nodes) {
-    if (!nodes.length) return () => {};
-    const resetStyles = [];
-    const newPositions = [];
-    nodes.forEach(nodeInfo => {
-      resetStyles.push(
-        setStylesAndCreateResetter(nodeInfo.node, {
-          transition: "none",
-        })
-      );
-      const {enterDecorationStyle, enterPositionStyle} = this.props;
-      if (enterDecorationStyle) {
-        resetStyles.push(setStylesAndCreateResetter(nodeInfo.node, enterDecorationStyle));
-      }
-      if (enterPositionStyle) {
-        const rect = nodeInfo.node.getBoundingClientRect();
-        const cStyle = getComputedStyle(nodeInfo.node, null);
+    const {enterStyle} = this.props;
+    if (!nodes.length || !enterStyle) return;
+
+    const positionProps = {};
+    const otherProps = {};
+    const resets = [];
+
+    Object.entries(enterStyle).forEach(([prop, val]) => {
+      (isPositionProp[prop] ? positionProps : otherProps)[prop] = val;
+    });
+    const ppPairs = Object.entries(positionProps);
+    if (ppPairs.length > 0) {
+      const nodesWithPos = nodes.map(nodeInfo => {
+        const {node} = nodeInfo;
+        const rect = node.getBoundingClientRect();
+        const cStyle = getComputedStyle(node, null);
         const marginTop = parseInt(cStyle.getPropertyValue("margin-top"), 10);
         const marginLeft = parseInt(cStyle.getPropertyValue("margin-left"), 10);
-        newPositions.push({
+        if (node.offsetLeft < 20) debugger;
+        return {
           nodeInfo,
-          style: {
-            width: rect.width,
-            height: rect.height,
-            ...enterPositionStyle,
-            top: nodeInfo.node.offsetTop - marginTop,
-            left: nodeInfo.node.offsetLeft - marginLeft,
-            position: "absolute",
-          },
+          rect,
+          top: node.offsetTop - marginTop,
+          left: node.offsetLeft - marginLeft,
+        };
+      });
+      nodesWithPos.forEach(({nodeInfo, rect, top, left}) => {
+        // We need to position it absolutely since changing an elements width might put it somewhere else in the flow
+        const {node} = nodeInfo;
+        const resetStyle = {};
+        const posStyles = {
+          width: rect.width,
+          height: rect.height,
+          top,
+          left,
+          position: "absolute",
+          ...positionProps,
+        };
+        const pairs = Object.entries(posStyles);
+        pairs.forEach(([prop, val]) => {
+          resetStyle[prop] = node.style[prop];
+          node.style[prop] = typeof val === "number" && !isUnitlessNumber[prop] ? `${val}px` : val;
         });
-      }
-    });
-    const resetPositions = newPositions.map(({nodeInfo, style}) => {
-      return setStylesAndCreateResetter(nodeInfo.node, style);
-    });
-    nodes.forEach(({key, node}) => {
-      measuredNodes[key] = node.getBoundingClientRect();
-    });
-    resetPositions.forEach(reset => reset());
-    return () => resetStyles.forEach(reset => reset());
+        resets.push(() => {
+          pairs.forEach(([prop]) => {
+            node.style[prop] = resetStyle[prop];
+          });
+        });
+      });
+      nodes.forEach(({key, node}) => (measuredNodes[key] = node.getBoundingClientRect()));
+      resets.forEach(reset => reset());
+    }
+
+    if (Object.keys(otherProps).length > 0) {
+      nodes.forEach(nodeInfo => {
+        styler.addStyle(nodeInfo, "enter", otherProps, {removeOnNextFrame: true});
+      });
+    }
   }
 
-  styleLeavingAndRemoveFromFlow(nodes, measuredNodes) {
+  styleLeaving(nodes, measuredNodes) {
     const {leaveStyle} = this.props;
     if (!nodes.length) return;
     const newPositions = [];
+    const transitionProps = [];
+    Object.keys(leaveStyle).forEach(prop => {
+      if (!isPositionProp[prop]) transitionProps.push(prop);
+    });
     nodes.forEach(nodeInfo => {
+      const {delayMs, durationMs, timingFunction} = nodeInfo.opts;
       const rect = measuredNodes[nodeInfo.key];
       const cStyle = getComputedStyle(nodeInfo.node, null);
       const marginTop = parseInt(cStyle.getPropertyValue("margin-top"), 10);
@@ -205,6 +196,9 @@ export default class FlipGroup extends React.Component {
           width: rect.width,
           height: rect.height,
           ...leaveStyle,
+          transition: transitionProps
+            .map(prop => `${kebapCase(prop)} ${durationMs}ms ${timingFunction} ${delayMs}ms`)
+            .join(", "),
           top: nodeInfo.node.offsetTop - marginTop,
           left: nodeInfo.node.offsetLeft - marginLeft,
           position: "absolute",
@@ -212,44 +206,43 @@ export default class FlipGroup extends React.Component {
       });
     });
     newPositions.forEach(({nodeInfo, style}) => {
-      const originalStyle = setStylesAndCreateResetter(nodeInfo.node, style);
-
-      nodeInfo.leaving = {
+      styler.addStyle(nodeInfo, "leaving", style, {
+        dontReset: true,
         onDone: () => {
           this.setState(({keysAndDataToRender}) => ({
             keysAndDataToRender: keysAndDataToRender.filter(knd => knd.key !== nodeInfo.key),
           }));
-          nodeInfo.leaving = null;
-          delete this.nodeInfoPerKey[nodeInfo.key];
         },
-        abortLeaving: () => {
-          originalStyle();
-          nodeInfo.leaving = null;
-        },
-      };
+      });
+      debugger;
     });
   }
 
   performUpdate(measuredNodes) {
-    if (this.cancelPendingFlip) this.cancelPendingFlip();
     const newPositions = [];
-    const {durationMs, timingFunction} = this.props;
-    const {leavingKeys} = this.state;
-    const enteringNodes = [];
-    const leavingNodes = [];
-    const nodeInfos = Object.values(this.nodeInfoPerKey);
-    nodeInfos.forEach(nodeInfo => {
-      if (this.isEnteringNode(nodeInfo.key, measuredNodes)) {
-        enteringNodes.push(nodeInfo);
-      } else if (leavingKeys[nodeInfo.key]) {
-        leavingNodes.push(nodeInfo);
-      } else if (nodeInfo.leaving) {
-        nodeInfo.leaving.abortLeaving();
-      }
-    });
+    const {leavingKeys, enteringKeys} = this.state;
 
-    this.styleLeavingAndRemoveFromFlow(leavingNodes, measuredNodes);
-    const resetEnterStyles = this.styleEntering(measuredNodes, enteringNodes);
+    const enteringNodes = [];
+    Object.keys(enteringKeys).forEach(key => {
+      if (measuredNodes[key]) {
+        if (process.env.NODE_ENV !== "production") {
+          // eslint-disable-next-line no-console
+          console.warn(`'${key}' is set as 'isEntering' even though it's measured already!?`);
+        }
+        return;
+      }
+      enteringNodes.push(this.nodeInfoPerKey[key]);
+    });
+    this.styleEntering(measuredNodes, enteringNodes);
+
+    const leavingNodes = [];
+    Object.keys(leavingKeys).forEach(key => {
+      const nodeInfo = this.nodeInfoPerKey[key];
+      if (!styler.hasStyle(nodeInfo, "leaving")) leavingNodes.push(nodeInfo);
+    });
+    this.styleLeaving(leavingNodes, measuredNodes);
+
+    const nodeInfos = Object.values(this.nodeInfoPerKey);
     const currentRects = {};
     const positionsWithParents = [];
     nodeInfos.forEach(nodeInfo => {
@@ -259,7 +252,7 @@ export default class FlipGroup extends React.Component {
         const newPosition = {
           nodeInfo,
           prevRect: measuredNodes[nodeInfo.key],
-          currentRect,
+          currentRect: currentRects[nodeInfo.key],
           parentRects: null,
         };
         newPositions.push(newPosition);
@@ -268,9 +261,7 @@ export default class FlipGroup extends React.Component {
     });
 
     positionsWithParents.forEach(position => {
-      const {
-        nodeInfo: {opts, key},
-      } = position;
+      const {opts, key} = position.nodeInfo;
       const parent = this.nodeInfoPerKey[opts.parentFlipKey];
       if (parent) {
         const prevRect = measuredNodes[parent.key];
@@ -282,33 +273,16 @@ export default class FlipGroup extends React.Component {
       }
     });
 
-    const nextFrameActions = newPositions.map(p => ({
-      actions: flipNode(p, {durationMs, timingFunction}),
-      key: p.nodeInfo.key,
-    }));
-    if (nextFrameActions.length) {
-      // asking for two animation frames since one frame is sometimes not enough to trigger transitions
-      let rafId = requestAnimationFrame(() => {
-        rafId = requestAnimationFrame(() => {
-          nextFrameActions.forEach(({actions}) => {
-            if (actions) actions.performTransition();
-          });
-          resetEnterStyles();
-          this.cancelPendingFlip = null;
+    newPositions.forEach(flipNode);
+
+    // asking for two animation frames since one frame is sometimes not enough to trigger transitions
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        Object.values(this.nodeInfoPerKey).forEach(nodeInfo => {
+          styler.onNextFrame(nodeInfo);
         });
       });
-      this.cancelPendingFlip = () => {
-        cancelAnimationFrame(rafId);
-        nextFrameActions.forEach(({actions}) => {
-          if (actions) actions.resetStyles();
-        });
-        resetEnterStyles();
-      };
-    }
-  }
-
-  componentDidMount() {
-    // this.performUpdate({})
+    });
   }
 
   componentDidUpdate(prevProps, prevState, measuredNodes) {

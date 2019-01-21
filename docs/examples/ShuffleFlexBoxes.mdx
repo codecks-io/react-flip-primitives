@@ -10,10 +10,8 @@ import GenerateNumbers from "./GenerateNumbers.js";
     <FlipGroup
       noAnimationOnMount
       changeKey={numbers.join("-")}
-      durationMs={500}
       keysAndData={numbers.map((number, index) => ({key: index.toString(), data: number}))}
-      enterDecorationStyle={{opacity: 0}}
-      enterPositionStyle={{width: 1}}
+      enterStyle={{opacity: 0, width: 1}}
       leaveStyle={{opacity: 0, width: 1}}
     >
       {(registerNode, keysAndData) => (
@@ -28,9 +26,10 @@ import GenerateNumbers from "./GenerateNumbers.js";
                   backgroundColor: `hsl(${number * 5}, 50%, 50%)`,
                   margin: "0 10px 20px",
                   opacity: 1,
+                  transition: "background-color 0.15s ease-out",
                 }}
                 ref={registerNode(key, {
-                  transitionProps: ["background-color", "opacity"],
+                  durationMs: 250,
                   delayMs: index * 10,
                 })}
               />

@@ -1,0 +1,32 @@
+---
+name: LeaveEnterToggle
+---
+
+import {Toggle} from "react-powerplug";
+import FlipGroup from "../../src/index";
+
+<Toggle>
+  {({on, toggle}) => (
+    <FlipGroup
+      changeKey={on ? "on" : "off"}
+      keysAndData={on ? [{key: "1", data: 1}] : []}
+      enterStyle={{width: 5, opacity: 0.5}}
+      leaveStyle={{opacity: 0.3, width: 1}}
+    >
+      {(registerNode, keysAndData) => (
+        <React.Fragment>
+          <div>
+            <button onClick={toggle}>toggle</button>
+          </div>
+          {keysAndData.map(({key, data: number}) => (
+            <div
+              key={key}
+              style={{width: 100, height: 50, backgroundColor: `tomato`}}
+              ref={registerNode(key, {durationMs: 2500})}
+            />
+          ))}
+        </React.Fragment>
+      )}
+    </FlipGroup>
+  )}
+</Toggle>
