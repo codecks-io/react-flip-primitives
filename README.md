@@ -46,25 +46,13 @@ The `FlipGroup` manages all nodes that are affected by a specific state change. 
 
   This prop expects an array of `{key, data}` pairs that are currently available. Once a new key is entered, it will perform an enter transition. Once a key is not present anymore, this key will perform a leave transition.
 
-- **`durationMs={number|default: 200}`**
-
-  Duration of the groups transitions in milliseconds
-
-- **`timingFunction={string|default: 'ease-in-out'}`**
-
-  css timing function used for this transition. Supports `linear`, `ease`, `ease-in`, `ease-out`, `ease-in-out` and `cubic-bezier(x1, y1, x2, y1)`.
-
 - **`leaveStyle={styleObject}`**
 
   Pass in the target style of disappearing nodes. If left empty, nodes will disappear immediately
 
-- **`enterPositionStyle={styleObject}`**
+- **`enterStyle={styleObject}`**
 
-  Pass in the position style props for an entering node (i.e. `top`, `left`, `height`, `width`)
-
-- **`enterDecorationStyle={styleObject}`**
-
-  Pass in the decoration style props (e.g. `opacity`, `color`) for an entering node
+  Pass in the style props for an entering node. It will automatically apply transitions for all referred props.
 
 - **`children={(registerNode, keysAndData) => ReactNode}`**
 
@@ -89,16 +77,15 @@ The `FlipGroup` manages all nodes that are affected by a specific state change. 
   Defines how the node behaves if the dimensions of a node needs to change. Possible values are:
 
   - `transform`: transition to the new dimensions via setting the corresponding `scale` `transform`.
-  - `non-transform`: don't apply `transform: scale()`. Instead transition `width` and/or `height` directly. This may lead to a lot of re-layouting. So use with caution.
   - `none`: don't process to the new dimensions.
 
-- **`opts.transitionProps={string[]|default: []}`**
+- **`durationMs={number|default: 200}`**
 
-  A string array of css properties that should be transitioned. Useful if `opacity`, or `background-color` changes from one state to another.
+  Duration of the element's transitions in milliseconds
 
-- **`opts.setWillChange={boolean|default: false}`**
+- **`timingFunction={string|default: 'ease-in-out'}`**
 
-  If set to `true` it will set the `will-change` css property to all properties that are affected by a transition. This might lead to smoother transitions but comes at the cost of taking up more memory.
+  css timing function used for this transition. Supports `linear`, `ease`, `ease-in`, `ease-out`, `ease-in-out` and `cubic-bezier(x1, y1, x2, y1)`.
 
 - **`opts.delayMs={number|default: 0}`**
 
