@@ -61,7 +61,7 @@ export const styler = {
     );
     originalStyle.transition = node.style.transition;
     node.style.transition = [originalStyle.transition, ...transitions].filter(Boolean).join(", ");
-    onDones.push(() => styler.clearStyles(nodeInfo));
+    if (!dontResetProps) onDones.push(() => styler.clearStyles(nodeInfo));
     _styler.transitionDoneTimeoutId = setTimeout(() => {
       onDones.forEach(cb => cb());
     }, durationMs + delayMs);

@@ -6,15 +6,6 @@ import {styler, kebapCase} from "./styler";
 import isPositionProp from "./isPositionProp";
 import isUnitlessNumber from "./isUnitlessNumber";
 
-const defaultHandlerOpts = {
-  positionMode: "transform", // none | transform
-  scaleMode: "transform", // none | transform | transform-no-children
-  setWillChange: false,
-  delayMs: 0,
-  durationMs: 200,
-  timingFunction: "ease-in-out",
-};
-
 export default class FlipGroup extends React.Component {
   static propTypes = {
     durationMs: PropTypes.number,
@@ -69,10 +60,24 @@ export default class FlipGroup extends React.Component {
     */
     this.nodeInfoPerKey = {};
     this.cancelPendingFlip = null;
+    this.readyForRemovalKeys = new Set();
+    this.removalBatchTimeoutId = null;
+  }
+
+  defaultHandlerOpts() {
+    const {durationMs, timingFunction} = this.props;
+    return {
+      positionMode: "transform", // none | transform
+      scaleMode: "transform", // none | transform | transform-no-children
+      setWillChange: false,
+      delayMs: 0,
+      durationMs: durationMs || 200,
+      timingFunction: timingFunction || "ease-in-out",
+    };
   }
 
   getOrCreateHandlerForKey = (key, userOpts) => {
-    const opts = {...defaultHandlerOpts, ...userOpts};
+    const opts = {...this.defaultHandlerOpts(), ...userOpts};
     let existing = this.nodeInfoPerKey[key];
     if (existing) {
       existing.opts = opts;
@@ -176,6 +181,21 @@ export default class FlipGroup extends React.Component {
     }
   }
 
+  readyToBeRemoved(key) {
+    this.readyForRemovalKeys.add(key);
+    if (!this.removalBatchTimeoutId) {
+      this.removalBatchTimeoutId = setTimeout(() => {
+        this.setState(({keysAndDataToRender}) => ({
+          keysAndDataToRender: keysAndDataToRender.filter(
+            knd => !this.readyForRemovalKeys.has(knd.key)
+          ),
+        }));
+        this.removalBatchTimeoutId = null;
+        this.readyForRemovalKeys.clear();
+      }, 50);
+    }
+  }
+
   styleLeaving(nodes) {
     const {leaveStyle} = this.props;
     if (!nodes.length) return;
@@ -200,11 +220,7 @@ export default class FlipGroup extends React.Component {
     newPositions.forEach(({nodeInfo, style}) => {
       styler.addStyle(nodeInfo, "leaving", style, {
         dontReset: true,
-        onDone: () => {
-          this.setState(({keysAndDataToRender}) => ({
-            keysAndDataToRender: keysAndDataToRender.filter(knd => knd.key !== nodeInfo.key),
-          }));
-        },
+        onDone: () => this.readyToBeRemoved(nodeInfo.key),
       });
     });
   }

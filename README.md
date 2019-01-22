@@ -54,6 +54,14 @@ The `FlipGroup` manages all nodes that are affected by a specific state change. 
 
   Pass in the style props for an entering node. It will automatically apply transitions for all referred props.
 
+- **`durationMs={number|default: 200}`**
+
+  Default Duration of the transitions in milliseconds, can be overwritten for single elements via `registerNode`.
+
+- **`timingFunction={string|default: 'ease-in-out'}`**
+
+  Default css timing function used for this transition. Supports `linear`, `ease`, `ease-in`, `ease-out`, `ease-in-out` and `cubic-bezier(x1, y1, x2, y1)`. Can be overwritten for single elements via `registerNode`.
+
 - **`children={(registerNode, keysAndData) => ReactNode}`**
 
   `FlipGroup`'s uses a render prop to register all nodes that are affected when the `changeKey` is changed.
