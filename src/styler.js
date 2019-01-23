@@ -30,6 +30,7 @@ export const styler = {
       node.style[prop] = val;
     });
     activeStyleNames.clear();
+    _styler.originalStyle = {};
     _styler.onDones = [];
     _styler.dontResetProps = {};
     if (transitionDoneTimeoutId) {
@@ -45,6 +46,7 @@ export const styler = {
     const {delayMs, durationMs, timingFunction} = opts;
     const {originalStyle, activeStyleNames, onDones, dontResetProps} = _styler;
     if (activeStyleNames.size === 0) return;
+    if (activeStyleNames.has("transition")) return;
     const props = [];
     Object.entries(originalStyle).forEach(([prop, val]) => {
       if (prop !== "transformOrigin" && !dontResetProps[prop]) {
@@ -61,46 +63,13 @@ export const styler = {
     );
     originalStyle.transition = node.style.transition;
     node.style.transition = [originalStyle.transition, ...transitions].filter(Boolean).join(", ");
-    if (!dontResetProps) onDones.push(() => styler.clearStyles(nodeInfo));
+    if (Object.keys(dontResetProps).length === 0) {
+      onDones.push(() => {
+        styler.clearStyles(nodeInfo);
+      });
+    }
     _styler.transitionDoneTimeoutId = setTimeout(() => {
       onDones.forEach(cb => cb());
     }, durationMs + delayMs);
   },
 };
-
-// // ENTERING
-
-// styler.add("simulate-final", {transition: null});
-// // measure node
-// styler.remove("simulate-final");
-// styler.add(
-//   "enter",
-//   {transition: "opacity", opacity: 0, scale: 0.5, marginLeft: -10},
-//   {killNextFrame: true}
-// );
-// styler.add("start-flip", {transform: "matrix()"});
-
-// // wait req frame
-
-// styler.remove("start-flip");
-// styler.remove("enter");
-// styler.add("flip-transition", {transition: "transform"});
-
-// // wait till trans over
-
-// styler.remove("flip-transition");
-
-// // LEAVING
-
-// // measure node
-// styler.add("leaving", {position: "absolute", top: 100, left: 200, ...leaveStyle});
-// styler.add("start-flip", {transform: "matrix()"});
-
-// // wait req frame
-
-// styler.remove("start-flip");
-// styler.add("flip-transition", {transition: "transform"});
-
-// // wait till trans over
-
-// // delete keyInfo
