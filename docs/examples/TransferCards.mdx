@@ -5,24 +5,25 @@ name: Transfer Cards
 import FlipGroup from "../../src/index";
 import GroupManager from "./GroupManager.js";
 
-<GroupManager groupCount={2} itemCount={1}>
-  {({items, addItem, removeItem, swapItem}) => (
+<GroupManager groupCount={3} itemCount={12}>
+  {({items, addItem, removeItem, swapItem, moveItemDown}) => (
     <FlipGroup
       noAnimationOnMount
       changeKey={items.map(({id, groupIndex}) => `${groupIndex}_${id}`).join("-")}
       keysAndData={items.map(item => ({key: item.id.toString(), data: item}))}
       enterStyle={{opacity: 0, width: 1}}
       leaveStyle={{opacity: 0}}
+      durationMs={5000}
     >
       {(registerNode, keysAndData) => {
-        const groups = Array.from(new Array(2), () => []);
+        const groups = Array.from(new Array(3), () => []);
         keysAndData.forEach(({data}) => {
           (groups[data.groupIndex] = groups[data.groupIndex] || []).push(data)
         })
         return (
           <React.Fragment>
           {groups.map((group, gi) => (
-            <div key={gi} ref={registerNode(`group_${gi}`, {durationMs: 5000, scaleMode: "none"})}>
+            <div key={gi} ref={registerNode(`group_${gi}`, {scaleMode: "none"})}>
               <h2>Group {gi}</h2>
               <div style={{display: "flex", flexWrap: "wrap"}}>
                 {group.map((item) => (
@@ -36,7 +37,6 @@ import GroupManager from "./GroupManager.js";
                       opacity: 1,
                     }}
                     ref={registerNode(item.id, {
-                      durationMs: 5000,
                       parentFlipKey: `group_${gi}`
                     })}
                   >
@@ -49,9 +49,14 @@ import GroupManager from "./GroupManager.js";
             </div>
           ))}
 
-          <button onClick={addItem} ref={registerNode("button", {durationMs: 5000})}>
-            addItem
-          </button>
+          <div ref={registerNode("buttons")}>
+            <button onClick={addItem} >
+              addItem
+            </button>
+            <button onClick={moveItemDown}>
+              move item
+            </button>
+          </div>
         </React.Fragment>
       )}}
     </FlipGroup>

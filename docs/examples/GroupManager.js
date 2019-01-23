@@ -44,12 +44,24 @@ export default class GroupManager extends React.Component {
     });
   };
 
+  moveItemDown = () => {
+    const {items} = this.state;
+    const {groupCount} = this.props;
+    if (items.length < 1) return;
+    const item = items[0];
+    const newGroupIndex = (item.groupIndex + 1) % groupCount;
+    this.setState({
+      items: items.map(i => (item.id === i.id ? {...i, groupIndex: newGroupIndex} : i)),
+    });
+  };
+
   render() {
     return this.props.children({
       items: this.state.items,
       addItem: this.addItem,
       removeItem: this.removeItem,
       swapItem: this.swapItem,
+      moveItemDown: this.moveItemDown,
     });
   }
 }
