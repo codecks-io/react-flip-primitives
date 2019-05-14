@@ -1,0 +1,63 @@
+---
+name: Enter Same Cards
+---
+
+import FlipGroup from "../../src/index";
+import GroupManager from "./GroupManager.js";
+
+<GroupManager groupCount={1} itemCount={0}>
+  {({items, addIdentical}) => (
+    <FlipGroup
+      changeKey={items.map(({id, groupIndex}) => `${groupIndex}_${id}`).join("-")}
+      keysAndData={items.map(item => ({key: item.id.toString(), data: item}))}
+      enterStyle={{opacity: 0}}
+      leaveStyle={{opacity: 0}}
+      durationMs={5000}
+    >
+      {(registerNode, keysAndData) => {
+        const groups = {}
+        keysAndData.forEach(({data}) => {
+          if (!groups[data.groupIndex]) groups[data.groupIndex] = {items: [], gi: data.groupIndex}
+          groups[data.groupIndex].items.push(data)
+        })
+
+        return (
+          <React.Fragment>
+          {Object.values(groups).map(({items, gi}) => (
+            <div key={gi} ref={registerNode(`group_${gi}`, {scaleMode: "none"})}>
+              <h2>Group {gi}</h2>
+              <div style={{display: "flex", flexWrap: "wrap"}}>
+                {items.map((item, idx) => (
+                  <div
+                    id={item.id + '' + idx}
+                    key={item.id + '' + idx}
+                    style={{
+                      width: 200,
+                      height: 50,
+                      backgroundColor: `hsl(${item.id * 5}, 50%, 50%)`,
+                      margin: "0 10px 20px",
+                      opacity: 1,
+                    }}
+                    ref={registerNode(item.id, {
+                      parentFlipKey: `group_${gi}`
+                    })}
+                  >
+                    {item.id}
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+
+          <div>
+            <button onClick={addIdentical} >
+              addIdentical
+            </button>
+          </div>
+        </React.Fragment>
+      )}}
+    </FlipGroup>
+
+)}
+
+</GroupManager>

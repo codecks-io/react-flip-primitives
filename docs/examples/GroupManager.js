@@ -20,6 +20,19 @@ export default class GroupManager extends React.Component {
     this.state = {items};
   }
 
+  addIdentical = () => {
+    const {items} = this.state;
+    const id = (this.nextId += 1);
+    this.setState({
+      items: [...items, {id, groupIndex: 0}, {id, groupIndex: 0}],
+    });
+    setTimeout(() => {
+      this.setState({
+        items: [...items, {id, groupIndex: 0}, {id, groupIndex: 0}],
+      });
+    });
+  };
+
   addItem = () => {
     const {items} = this.state;
     const newItem = {
@@ -62,6 +75,7 @@ export default class GroupManager extends React.Component {
       removeItem: this.removeItem,
       swapItem: this.swapItem,
       moveItemDown: this.moveItemDown,
+      addIdentical: this.addIdentical,
     });
   }
 }

@@ -282,10 +282,16 @@ export default class FlipGroup extends React.Component {
 
     newPositions.forEach(flipNode);
 
+    const currentValues = Object.values(this.nodeInfoPerKey).map(({node, _styler, opts}) => ({
+      node,
+      _styler,
+      opts,
+    }));
+
     // asking for two animation frames since one frame is sometimes not enough to trigger transitions
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
-        Object.values(this.nodeInfoPerKey).forEach(nodeInfo => {
+        currentValues.forEach(nodeInfo => {
           styler.onNextFrame(nodeInfo);
         });
       });

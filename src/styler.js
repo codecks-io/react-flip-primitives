@@ -41,8 +41,7 @@ export const styler = {
   hasStyle(nodeInfo, styleName) {
     return nodeInfo._styler.activeStyleNames.has(styleName);
   },
-  onNextFrame(nodeInfo) {
-    const {node, _styler, opts} = nodeInfo;
+  onNextFrame({node, _styler, opts}) {
     const {delayMs, durationMs, timingFunction} = opts;
     const {originalStyle, activeStyleNames, onDones, dontResetProps} = _styler;
     if (activeStyleNames.size === 0) return;
@@ -65,7 +64,7 @@ export const styler = {
     node.style.transition = [originalStyle.transition, ...transitions].filter(Boolean).join(", ");
     if (Object.keys(dontResetProps).length === 0) {
       onDones.push(() => {
-        styler.clearStyles(nodeInfo);
+        styler.clearStyles({node, _styler});
       });
     }
     _styler.transitionDoneTimeoutId = setTimeout(() => {
