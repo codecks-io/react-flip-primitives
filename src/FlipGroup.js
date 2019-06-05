@@ -139,7 +139,6 @@ export default class FlipGroup extends React.Component {
         const cStyle = getComputedStyle(node, null);
         const marginTop = parseInt(cStyle.getPropertyValue("margin-top"), 10);
         const marginLeft = parseInt(cStyle.getPropertyValue("margin-left"), 10);
-        if (node.offsetLeft < 20) debugger;
         return {
           nodeInfo,
           rect,
