@@ -1,12 +1,9 @@
----
-name: LeaveEnterToggle
----
+import React from "react";
+import FlipGroup from "../src/useFlipGroup";
 
-import {Toggle} from "react-powerplug";
-import FlipGroup from "../../src/index";
-
-<Toggle>
-  {({on, toggle}) => (
+export const Component = () => {
+  const [on, setOn] = React.useState();
+  return (
     <FlipGroup
       changeKey={on ? "on" : "off"}
       keysAndData={on ? [{key: "1", data: 1}] : []}
@@ -16,7 +13,7 @@ import FlipGroup from "../../src/index";
       {(registerNode, keysAndData) => (
         <React.Fragment>
           <div>
-            <button onClick={toggle}>toggle</button>
+            <button onClick={() => setOn(!on)}>toggle</button>
           </div>
           {keysAndData.map(({key, data: number}) => (
             <div
@@ -28,5 +25,10 @@ import FlipGroup from "../../src/index";
         </React.Fragment>
       )}
     </FlipGroup>
-  )}
-</Toggle>
+  );
+};
+
+export default {
+  title: "LeaveEnter Toggle",
+  component: FlipGroup,
+};

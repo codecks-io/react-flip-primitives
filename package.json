@@ -5,8 +5,7 @@
   "keywords": [
     "react",
     "flip",
-    "animation",
-    "css-transition"
+    "animation"
   ],
   "main": "dist/cjs/index.js",
   "module": "dist/es/index.js",
@@ -24,24 +23,30 @@
     "setup": "npm install && npm run validate -s",
     "docz:dev": "docz dev",
     "docz:build": "docz build",
-    "prepublish": "npm run lint && npm run build"
+    "prepublish": "npm run lint && npm run build",
+    "storybook": "start-storybook -p 6006",
+    "build-storybook": "build-storybook"
   },
   "devDependencies": {
-    "@db-scripts/bundle": "0.1.0",
-    "@db-scripts/eslint-config": "^0.1.3",
-    "docz": "^0.12.5",
-    "docz-plugin-css": "^0.11.0",
-    "eslint": "5.7",
-    "react": "^16.3.0",
-    "react-dom": "^16.3.0",
-    "react-powerplug": "^1.0.0-rc.1"
+    "@babel/core": "^7.7.5",
+    "@db-scripts/bundle": "0.2.3",
+    "@db-scripts/eslint-config": "^0.2.3",
+    "@storybook/addon-actions": "^5.2.8",
+    "@storybook/addon-links": "^5.2.8",
+    "@storybook/addons": "^5.2.8",
+    "@storybook/react": "^5.2.8",
+    "babel-loader": "^8.0.6",
+    "eslint": "6.7.2",
+    "react": "^16.12.0",
+    "react-dom": "^16.12.0",
+    "react-powerplug": "^1.0.0"
   },
   "peerDependencies": {
-    "react": ">=16.3.0"
+    "react": ">=16.9.0"
   },
   "dependencies": {
-    "@babel/runtime": "^7.1.2",
-    "prop-types": "^15.6.2",
-    "rematrix": "^0.3.0"
+    "@babel/runtime": "^7.7.6",
+    "prop-types": "^15.7.2",
+    "rematrix": "^0.4.1"
   }
 }
