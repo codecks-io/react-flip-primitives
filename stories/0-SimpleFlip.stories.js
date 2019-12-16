@@ -126,7 +126,7 @@ const createNPos = n =>
     Math.round(Math.random() * 100),
     Math.round(Math.random() * 100),
   ]);
-const N = 100;
+const N = 500;
 
 export const PerfTest = () => {
   const [pos, setPos] = React.useState(() => createNPos(N));

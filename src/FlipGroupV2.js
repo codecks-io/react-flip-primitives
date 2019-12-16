@@ -168,6 +168,7 @@ const createPositionSpring = ({node, config}) => {
 const createHandler = (key, opts, onRemove) => {
   let nodeInfo = null; // {node, positionSpring}
   let before = null;
+  let target = null;
   const positionSpringConfig = {...defaultSpringConfig, ...opts.positionSpringConfig};
   const handler = {
     key,
@@ -178,8 +179,10 @@ const createHandler = (key, opts, onRemove) => {
     reset: () => {
       nodeInfo.positionSpring.reset();
     },
-    postReset: () => {
-      const target = nodeInfo.node.getBoundingClientRect();
+    measureAfter: () => {
+      target = nodeInfo.node.getBoundingClientRect();
+    },
+    animate: () => {
       nodeInfo.positionSpring.animate(before, target);
     },
     refFn: node => {
@@ -227,7 +230,8 @@ export default class FlipGroupV2 extends React.Component {
     if (prevProps.changeKey === this.props.changeKey) return;
     const handlers = Object.values(this.handlersPerKey);
     handlers.forEach(h => h.reset());
-    handlers.forEach(h => h.postReset());
+    handlers.forEach(h => h.measureAfter());
+    handlers.forEach(h => h.animate());
   }
 
   render() {
