@@ -1,5 +1,5 @@
 import React from "react";
-import FlipGroupV2 from "../src/FlipGroupV2";
+import FlipGroup from "../src/FlipGroup";
 
 export default {
   title: "Nesting",
@@ -10,7 +10,7 @@ export const NestedOne = () => {
 
   return (
     <div>
-      <FlipGroupV2
+      <FlipGroup
         changeKey={boxes}
         keysAndData={Object.values(boxes).map(b => ({key: b.id, data: b}))}
       >
@@ -46,7 +46,7 @@ export const NestedOne = () => {
             </div>
           ))
         }
-      </FlipGroupV2>
+      </FlipGroup>
     </div>
   );
 };
@@ -69,7 +69,7 @@ export const CrazyBoxes = () => {
   const [boxes, setBoxes] = React.useState(shuffleBoxes(BOX_COUNT, PARENT_COUNT));
 
   return (
-    <FlipGroupV2 changeKey={boxes} keysAndData={boxes.map(b => ({key: b.id, data: b}))}>
+    <FlipGroup changeKey={boxes} keysAndData={boxes.map(b => ({key: b.id, data: b}))}>
       {(registerNode, keysAndData) => (
         <div>
           {range(PARENT_COUNT).map(parentId => (
@@ -117,6 +117,6 @@ export const CrazyBoxes = () => {
           </button>
         </div>
       )}
-    </FlipGroupV2>
+    </FlipGroup>
   );
 };

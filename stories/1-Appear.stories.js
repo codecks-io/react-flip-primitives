@@ -1,5 +1,5 @@
 import React from "react";
-import FlipGroupV2 from "../src/FlipGroupV2";
+import FlipGroup from "../src/FlipGroup";
 
 export default {
   title: "Appearing",
@@ -10,7 +10,7 @@ export const AppearOneTop = () => {
 
   return (
     <div>
-      <FlipGroupV2 changeKey={present} keysAndData={present ? [{key: "box", data: null}] : []}>
+      <FlipGroup changeKey={present} keysAndData={present ? [{key: "box", data: null}] : []}>
         {(registerNode, keysAndData) => (
           <div style={{background: "yellow", height: 20}}>
             {keysAndData.map(({key}) => (
@@ -27,7 +27,7 @@ export const AppearOneTop = () => {
             ))}
           </div>
         )}
-      </FlipGroupV2>
+      </FlipGroup>
       <button onClick={() => setPresent(!present)}>toggle</button>
     </div>
   );
@@ -38,7 +38,7 @@ export const AppearOneTransform = () => {
 
   return (
     <div>
-      <FlipGroupV2 changeKey={present} keysAndData={present ? [{key: "box", data: null}] : []}>
+      <FlipGroup changeKey={present} keysAndData={present ? [{key: "box", data: null}] : []}>
         {(registerNode, keysAndData) => (
           <div style={{background: "yellow", height: 20}}>
             {keysAndData.map(({key}) => (
@@ -58,7 +58,7 @@ export const AppearOneTransform = () => {
             ))}
           </div>
         )}
-      </FlipGroupV2>
+      </FlipGroup>
       <button onClick={() => setPresent(!present)}>toggle</button>
     </div>
   );
@@ -69,7 +69,7 @@ export const AppearTwo = () => {
 
   return (
     <div>
-      <FlipGroupV2 changeKey={present} keysAndData={present ? [{key: "box", data: null}] : []}>
+      <FlipGroup changeKey={present} keysAndData={present ? [{key: "box", data: null}] : []}>
         {(registerNode, keysAndData) => (
           <div style={{background: "yellow", height: 20, display: "flex"}}>
             {keysAndData.map(({key}) => (
@@ -99,7 +99,7 @@ export const AppearTwo = () => {
             />
           </div>
         )}
-      </FlipGroupV2>
+      </FlipGroup>
       <button onClick={() => setPresent(!present)}>toggle</button>
     </div>
   );
@@ -110,7 +110,7 @@ export const AppearOnlyPresence = () => {
 
   return (
     <div>
-      <FlipGroupV2 changeKey={present} keysAndData={present ? [{key: "box", data: null}] : []}>
+      <FlipGroup changeKey={present} keysAndData={present ? [{key: "box", data: null}] : []}>
         {(registerNode, keysAndData) => (
           <div style={{background: "yellow", height: 20}}>
             {keysAndData.map(({key}) => (
@@ -127,7 +127,7 @@ export const AppearOnlyPresence = () => {
             ))}
           </div>
         )}
-      </FlipGroupV2>
+      </FlipGroup>
       <button onClick={() => setPresent(!present)}>toggle</button>
     </div>
   );

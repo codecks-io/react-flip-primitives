@@ -1,5 +1,5 @@
 import React from "react";
-import FlipGroupV2 from "../src/FlipGroupV2";
+import FlipGroup from "../src/FlipGroup";
 
 export default {
   title: "SimpleFlip",
@@ -10,7 +10,7 @@ export const SimpleX = () => {
 
   return (
     <div>
-      <FlipGroupV2 changeKey={pos}>
+      <FlipGroup changeKey={pos}>
         {registerNode => (
           <div style={{background: "yellow", position: "relative", height: 5}}>
             <div
@@ -26,7 +26,7 @@ export const SimpleX = () => {
             />
           </div>
         )}
-      </FlipGroupV2>
+      </FlipGroup>
       <button onClick={() => setPos(Math.round(Math.random() * 100))}>{pos}%</button>
     </div>
   );
@@ -37,7 +37,7 @@ export const SimpleY = () => {
 
   return (
     <div>
-      <FlipGroupV2 changeKey={pos}>
+      <FlipGroup changeKey={pos}>
         {registerNode => (
           <div style={{background: "yellow", position: "relative", width: 5, height: 100}}>
             <div
@@ -53,7 +53,7 @@ export const SimpleY = () => {
             />
           </div>
         )}
-      </FlipGroupV2>
+      </FlipGroup>
       <button onClick={() => setPos(Math.round(Math.random() * 100))}>{pos}%</button>
     </div>
   );
@@ -64,7 +64,7 @@ export const SimpleXY = () => {
 
   return (
     <div>
-      <FlipGroupV2 changeKey={pos}>
+      <FlipGroup changeKey={pos}>
         {registerNode => (
           <div style={{background: "yellow", position: "relative", width: 100, height: 100}}>
             <div
@@ -80,7 +80,7 @@ export const SimpleXY = () => {
             />
           </div>
         )}
-      </FlipGroupV2>
+      </FlipGroup>
       <button
         onClick={() => setPos([Math.round(Math.random() * 100), Math.round(Math.random() * 100)])}
       >
@@ -96,7 +96,7 @@ export const UnmountTest = () => {
 
   return (
     <div>
-      <FlipGroupV2 changeKey={pos}>
+      <FlipGroup changeKey={pos}>
         {registerNode => (
           <div style={{background: "yellow", position: "relative", height: 5}}>
             {present && (
@@ -114,7 +114,7 @@ export const UnmountTest = () => {
             )}
           </div>
         )}
-      </FlipGroupV2>
+      </FlipGroup>
       <button onClick={() => setPos(Math.round(Math.random() * 100))}>{pos}%</button>
       <button onClick={() => setPresent(!present)}>toggle box</button>
     </div>
@@ -133,13 +133,13 @@ export const PerfTest = () => {
 
   return (
     <div>
-      <FlipGroupV2 changeKey={pos}>
+      <FlipGroup changeKey={pos}>
         {registerNode => (
           <div style={{background: "yellow", position: "relative", width: 500, height: 500}}>
             {pos.map((p, i) => (
               <div
                 key={i}
-                ref={registerNode("box" + i, {positionSpringConfig: {mass: 1, friction: 20}})}
+                ref={registerNode("box" + i, {positionSpringConfig: {mass: 100, friction: 200}})}
                 style={{
                   position: "absolute",
                   background: "red",
@@ -152,7 +152,7 @@ export const PerfTest = () => {
             ))}
           </div>
         )}
-      </FlipGroupV2>
+      </FlipGroup>
       <button onClick={() => setPos(createNPos(N))}>reset</button>
     </div>
   );
