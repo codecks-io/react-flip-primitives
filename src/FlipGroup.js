@@ -196,6 +196,7 @@ const setAndResetStyles = (node, styles) => {
   return () => prev.forEach(([key, val]) => (node.style[key] = val));
 };
 
+// eslint-disable-next-line max-lines-per-function
 const createHandler = (key, _opts, handlersPerKey, removeNode) => {
   let nodeInfo = null; // {node, positionSpring}
   let before = null;
@@ -279,7 +280,8 @@ const createHandler = (key, _opts, handlersPerKey, removeNode) => {
       if (handler.opts.parentFlipKey) {
         const parentHandler = handlersPerKey[handler.opts.parentFlipKey];
         if (parentHandler) {
-          parentDiff = parentHandler._getDiff();
+          const diff = parentHandler._getDiff();
+          if (diff.before) parentDiff = diff;
         }
       }
       const xParent = parentDiff ? parentDiff.target.left - parentDiff.before.left : 0;
@@ -323,7 +325,10 @@ const createHandler = (key, _opts, handlersPerKey, removeNode) => {
           );
         }
       }
-      nodeInfo.positionSpring.animate(before, target, parentDiff, nodeInfo.node.style.transform);
+      if (before) {
+        // if a key was present from the start, but the ref was handed in later, no `before` is available
+        nodeInfo.positionSpring.animate(before, target, parentDiff, nodeInfo.node.style.transform);
+      }
       if (!nodeInfo.positionSpring.isActive()) onRest();
       before = null;
       target = null;
