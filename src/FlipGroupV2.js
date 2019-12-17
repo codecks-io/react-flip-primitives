@@ -1,4 +1,6 @@
 import React from "react";
+import mergeDiff from "./mergeDiff";
+import isUnitlessNumber from "./isUnitlessNumber";
 
 let nextFrameFns = {};
 let nextFnCount = 0;
@@ -34,6 +36,7 @@ const defaultSpringConfig = {
   precision: 0.1,
 };
 
+// inspired by react-spring
 const createSpring = ({onUpdate, onFinish, startVal, config}) => {
   let velocity = 0;
   let targetVal = null;
@@ -87,36 +90,49 @@ const createSpring = ({onUpdate, onFinish, startVal, config}) => {
         cancelFn = null;
       }
     },
+    isActive: () => !!cancelFn,
   };
   return spring;
 };
 
-const createPositionSpring = ({node, config}) => {
+const createTransform = (x, y, existing) => {
+  return `translate(${x || 0}px, ${y || 0}px)${existing ? ` ${existing}` : ""}`;
+};
+
+const createPositionSpring = ({node, config, onRest}) => {
   let xSpring = null;
   let ySpring = null;
   let xVal = null;
   let yVal = null;
+  let existingTransform = null;
   const styleIfDone = () => {
     if ((!xSpring || xVal !== null) && (!ySpring || yVal !== null)) {
-      node.style.transform = `translate(${xVal || 0}px, ${yVal || 0}px)`;
+      node.style.transform = createTransform(xVal, yVal, existingTransform);
       xVal = null;
       yVal = null;
     }
   };
   const resetIfDone = () => {
     if (!xSpring && !ySpring) {
-      node.style.transform = "";
+      node.style.transform = existingTransform;
+      onRest();
     }
   };
   return {
     reset: () => {
-      node.style.transform = "";
+      if (xSpring || ySpring) node.style.transform = existingTransform;
     },
-    animate: (beforeRect, targetRect) => {
-      const xDiff = targetRect.left - beforeRect.left;
-      const yDiff = targetRect.top - beforeRect.top;
+    animate: (beforeRect, targetRect, parentDiff, _existingTransform) => {
+      const xParent = parentDiff ? parentDiff.target.left - parentDiff.before.left : 0;
+      const yParent = parentDiff ? parentDiff.target.top - parentDiff.before.top : 0;
+
+      const xDiff = targetRect.left - beforeRect.left - xParent;
+      const yDiff = targetRect.top - beforeRect.top - yParent;
+
+      existingTransform = _existingTransform;
+
       if (!xSpring && !ySpring && !xDiff && !yDiff) return;
-      node.style.transform = `translate(${-xDiff || 0}px, ${-yDiff || 0}px)`;
+      node.style.transform = createTransform(-xDiff, -yDiff, _existingTransform);
 
       if (!xSpring) {
         if (xDiff !== 0) {
@@ -162,40 +178,172 @@ const createPositionSpring = ({node, config}) => {
       if (xSpring) xSpring.cancel();
       if (ySpring) ySpring.cancel();
     },
+    isActive: () => xSpring || ySpring,
   };
 };
 
-const createHandler = (key, opts, onRemove) => {
+const applyStyles = (node, styles) => {
+  Object.entries(styles).forEach(
+    ([key, val]) =>
+      (node.style[key] =
+        typeof val === "number" && val !== 0 && !isUnitlessNumber[key] ? `${val}px` : val)
+  );
+};
+
+const setAndResetStyles = (node, styles) => {
+  const prev = Object.entries(styles).map(([key]) => [key, node.style[key]]);
+  applyStyles(node, styles);
+  return () => prev.forEach(([key, val]) => (node.style[key] = val));
+};
+
+// eslint-disable-next-line max-lines-per-function
+const createHandler = (key, _opts, handlersPerKey, removeNode) => {
   let nodeInfo = null; // {node, positionSpring}
   let before = null;
   let target = null;
-  const positionSpringConfig = {...defaultSpringConfig, ...opts.positionSpringConfig};
+  let offset = null;
+  const positionSpringConfig = {...defaultSpringConfig, ..._opts.positionSpringConfig};
+
+  const resets = {};
+  const springs = {};
+  const onRest = () => {
+    if (handler.isLeaving) {
+      if (Object.values(springs).every(s => !s.isActive())) removeNode();
+    }
+  };
+
+  const createPresenceSpring = startVal => {
+    springs.presence = createSpring({
+      onUpdate: val => {
+        if (nodeInfo) applyStyles(nodeInfo.node, handler.opts.onPresence(val));
+      },
+      onFinish: onRest,
+      startVal,
+      config: defaultSpringConfig,
+    });
+  };
+
   const handler = {
     key,
-    opts,
+    opts: _opts,
+    isLeaving: false,
+    enter: () => {
+      if (handler.opts.enterPosition) {
+        const resetFn = setAndResetStyles(nodeInfo.node, handler.opts.enterPosition);
+        resets.enter = () => {
+          resetFn();
+          delete resets.enter;
+        };
+      }
+      if (handler.opts.onPresence) {
+        if (!springs.presence) createPresenceSpring(0);
+        springs.presence.animateTo(1);
+      }
+    },
+    reenter: () => {
+      handler.isLeaving = false;
+      if (springs.presence) springs.presence.animateTo(1);
+    },
     measureBefore: () => {
-      before = nodeInfo.node.getBoundingClientRect();
+      before = nodeInfo && nodeInfo.node.getBoundingClientRect();
     },
     reset: () => {
-      nodeInfo.positionSpring.reset();
+      Object.values(resets).forEach(fn => fn());
     },
-    measureAfter: () => {
+    applyLeavePosition: () => {
+      handler.isLeaving = true;
+      if (handler.opts.leavePosition) {
+        const resetFn = setAndResetStyles(nodeInfo.node, handler.opts.leavePosition);
+        resets.applyLeavePosition = () => {
+          resetFn();
+          delete resets.applyLeavePosition;
+        };
+      }
+      if (handler.opts.onPresence) {
+        if (!springs.presence) createPresenceSpring(1);
+        springs.presence.animateTo(0);
+      }
+    },
+    measureLeaving: () => {
+      offset = {left: nodeInfo.node.offsetLeft, top: nodeInfo.node.offsetTop};
       target = nodeInfo.node.getBoundingClientRect();
     },
+    removeFromFlow: () => {
+      const resetFn = setAndResetStyles(nodeInfo.node, {position: "absolute"});
+      resets.removeFromFlow = () => {
+        resetFn();
+        delete resets.removeFromFlow;
+      };
+    },
+    relocateLeaving: () => {
+      let parentDiff = null;
+      if (handler.opts.parentFlipKey) {
+        const parentHandler = handlersPerKey[handler.opts.parentFlipKey];
+        if (parentHandler) {
+          parentDiff = parentHandler._getDiff();
+        }
+      }
+      const xParent = parentDiff ? parentDiff.target.left - parentDiff.before.left : 0;
+      const yParent = parentDiff ? parentDiff.target.top - parentDiff.before.top : 0;
+
+      if (resets.applyLeavePosition) resets.applyLeavePosition();
+
+      const resetFn = setAndResetStyles(nodeInfo.node, {
+        transform:
+          (handler.opts.leavePosition && handler.opts.leavePosition.transform) || undefined,
+        left: `${offset.left - xParent}px`,
+        top: `${offset.top - yParent}px`,
+        marginLeft: 0,
+        marginTop: 0,
+        width: `${target.width}px`,
+        height: `${target.height}px`,
+      });
+
+      resets.relocateLeaving = () => {
+        resetFn();
+        delete resets.relocateLeaving;
+        if (resets.removeFromFlow) {
+          resets.removeFromFlow();
+        }
+      };
+      target = null;
+    },
+    measureAfter: () => {
+      if (!target) target = nodeInfo.node.getBoundingClientRect();
+    },
     animate: () => {
-      nodeInfo.positionSpring.animate(before, target);
+      let parentDiff = null;
+      if (handler.opts.parentFlipKey) {
+        const parentHandler = handlersPerKey[handler.opts.parentFlipKey];
+        if (parentHandler) {
+          parentDiff = parentHandler._getDiff();
+        } else if (process.env.NODE_ENV !== "production") {
+          // eslint-disable-next-line no-console
+          console.warn(
+            `Couldn't find parentFlipKey: "${handler.opts.parentFlipKey}" required by "${key}"`
+          );
+        }
+      }
+      nodeInfo.positionSpring.animate(before, target, parentDiff, nodeInfo.node.style.transform);
+      if (!nodeInfo.positionSpring.isActive()) onRest();
+      before = null;
+      target = null;
     },
     refFn: node => {
       if (node) {
         nodeInfo = {
           node,
-          positionSpring: createPositionSpring({node, config: positionSpringConfig}),
+          positionSpring: createPositionSpring({node, config: positionSpringConfig, onRest}),
         };
+        resets.position = () => nodeInfo.positionSpring.reset();
+        springs.position = nodeInfo.positionSpring;
+        handlersPerKey[key] = handler;
       } else {
-        nodeInfo.positionSpring.cancel();
-        onRemove();
+        Object.values(springs).forEach(s => s.cancel());
+        delete handlersPerKey[key];
       }
     },
+    _getDiff: () => ({before, target}),
   };
   return handler;
 };
@@ -204,6 +352,16 @@ export default class FlipGroupV2 extends React.Component {
   constructor(props) {
     super(props);
     this.handlersPerKey = {};
+    this.enteringKeys = {};
+    this.leavingKeys = {};
+    this.renderedKeysAndData = props.keysAndData || [];
+  }
+
+  getSnapshotBeforeUpdate(prevProps) {
+    if (prevProps.changeKey === this.props.changeKey) return null;
+    const handlers = Object.values(this.handlersPerKey);
+    handlers.forEach(h => h.measureBefore());
+    return null;
   }
 
   registerNode = (key, opts = {}) => {
@@ -212,29 +370,67 @@ export default class FlipGroupV2 extends React.Component {
       existing.opts = opts;
       return existing.refFn;
     } else {
-      const handler = createHandler(key, opts, () => {
-        delete this.handlersPerKey[key];
+      const handler = createHandler(key, opts, this.handlersPerKey, () => {
+        this.renderedKeysAndData = this.renderedKeysAndData.filter(d => d.key !== key);
+        this.forceUpdate();
       });
-      this.handlersPerKey[key] = handler;
       return handler.refFn;
     }
   };
 
-  getSnapshotBeforeUpdate(prevProps) {
-    if (prevProps.changeKey === this.props.changeKey) return null;
-    Object.values(this.handlersPerKey).forEach(h => h.measureBefore());
-    return null;
-  }
-
   componentDidUpdate(prevProps) {
     if (prevProps.changeKey === this.props.changeKey) return;
     const handlers = Object.values(this.handlersPerKey);
+
+    const entering = handlers.filter(h => this.enteringKeys[h.key]);
+    entering.forEach(h => h.enter());
+    entering.forEach(h => {
+      h.measureBefore();
+      delete this.enteringKeys[h.key];
+    });
+
     handlers.forEach(h => h.reset());
+
+    const leaving = handlers.filter(h => this.leavingKeys[h.key]);
+    leaving.forEach(h => {
+      h.applyLeavePosition();
+      delete this.leavingKeys[h.key];
+    });
+    leaving.forEach(h => h.measureLeaving());
+    leaving.forEach(h => h.removeFromFlow());
+    leaving
+      .map(h => h.opts.parentFlipKey && this.handlersPerKey[h.opts.parentFlipKey])
+      .map(parent => parent && parent.measureAfter());
+    leaving.forEach(h => h.relocateLeaving());
+
+    (this.props.keysAndData || []).forEach(({key}) => {
+      const handler = this.handlersPerKey[key];
+      if (handler && handler.isLeaving) {
+        handler.reenter();
+      }
+    });
+
     handlers.forEach(h => h.measureAfter());
     handlers.forEach(h => h.animate());
   }
 
   render() {
-    return this.props.children(this.registerNode);
+    this.props.keysAndData.forEach(kd => {
+      if (this.leavingKeys[kd.key]) delete this.leavingKeys[kd.key];
+    });
+
+    this.renderedKeysAndData = mergeDiff(
+      this.renderedKeysAndData,
+      this.props.keysAndData || [],
+      (oldKeyIndex, content) => {
+        this.leavingKeys[content.key] = true;
+        return content;
+      },
+      (newKeyIndex, content) => {
+        this.enteringKeys[content.key] = true;
+      }
+    );
+
+    return this.props.children(this.registerNode, this.renderedKeysAndData);
   }
 }

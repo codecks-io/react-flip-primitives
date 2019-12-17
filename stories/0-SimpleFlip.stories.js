@@ -138,7 +138,8 @@ export const PerfTest = () => {
           <div style={{background: "yellow", position: "relative", width: 500, height: 500}}>
             {pos.map((p, i) => (
               <div
-                ref={registerNode("box" + i, {positionSpringConfig: {mass: 10, friction: 100}})}
+                key={i}
+                ref={registerNode("box" + i, {positionSpringConfig: {mass: 1, friction: 20}})}
                 style={{
                   position: "absolute",
                   background: "red",
