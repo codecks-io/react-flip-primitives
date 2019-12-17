@@ -196,7 +196,6 @@ const setAndResetStyles = (node, styles) => {
   return () => prev.forEach(([key, val]) => (node.style[key] = val));
 };
 
-// eslint-disable-next-line max-lines-per-function
 const createHandler = (key, _opts, handlersPerKey, removeNode) => {
   let nodeInfo = null; // {node, positionSpring}
   let before = null;
@@ -208,7 +207,7 @@ const createHandler = (key, _opts, handlersPerKey, removeNode) => {
   const springs = {};
   const onRest = () => {
     if (handler.isLeaving) {
-      if (Object.values(springs).every(s => !s.isActive())) removeNode();
+      if (Object.values(springs).every(s => !s.isActive())) removeNode(key);
     }
   };
 
@@ -219,7 +218,7 @@ const createHandler = (key, _opts, handlersPerKey, removeNode) => {
       },
       onFinish: onRest,
       startVal,
-      config: defaultSpringConfig,
+      config: {...defaultSpringConfig, ...handler.opts.presenceSpringConfig},
     });
   };
 
@@ -355,6 +354,25 @@ export default class FlipGroupV2 extends React.Component {
     this.enteringKeys = {};
     this.leavingKeys = {};
     this.renderedKeysAndData = props.keysAndData || [];
+    this.toBeRemovedKeys = new Set();
+  }
+
+  removeLeavingNode = key => {
+    if (!this.cancelLeavingFn) {
+      this.cancelLeavingFn = onNextFrame(() => {
+        this.cancelLeavingFn = null;
+        this.renderedKeysAndData = this.renderedKeysAndData.filter(
+          d => !this.toBeRemovedKeys.has(d.key)
+        );
+        this.toBeRemovedKeys.clear();
+        this.forceUpdate();
+      });
+    }
+    this.toBeRemovedKeys.add(key);
+  };
+
+  componentWillUnmount() {
+    if (this.cancelLeavingFn) this.cancelLeavingFn();
   }
 
   getSnapshotBeforeUpdate(prevProps) {
@@ -370,10 +388,7 @@ export default class FlipGroupV2 extends React.Component {
       existing.opts = opts;
       return existing.refFn;
     } else {
-      const handler = createHandler(key, opts, this.handlersPerKey, () => {
-        this.renderedKeysAndData = this.renderedKeysAndData.filter(d => d.key !== key);
-        this.forceUpdate();
-      });
+      const handler = createHandler(key, opts, this.handlersPerKey, this.removeLeavingNode);
       return handler.refFn;
     }
   };
