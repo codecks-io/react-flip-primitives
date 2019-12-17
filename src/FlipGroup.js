@@ -46,27 +46,33 @@ const createSpring = ({onUpdate, onFinish, startVal, config}) => {
 
   const doStep = dt => {
     let finished = false;
-    const step = Math.max(1, Math.round(dt / 250)); // at least 1ms, at most such that there's 250 steps to calculate
-    const numSteps = Math.ceil(dt / step);
-    for (let n = 0; n < numSteps; n++) {
-      const isMoving = Math.abs(velocity) > restVelocity;
+    if (dt > 250) {
+      // if steps take a long time, don't bother with doing spring animations
+      finished = true;
+    } else {
+      const step = 1;
+      const numSteps = Math.ceil(dt / step);
+      for (let n = 0; n < numSteps; n++) {
+        const isMoving = Math.abs(velocity) > restVelocity;
 
-      if (!isMoving) {
-        finished = Math.abs(targetVal - spring.val) <= config.precision;
-        if (finished) {
-          break;
+        if (!isMoving) {
+          finished = Math.abs(targetVal - spring.val) <= config.precision;
+          if (finished) {
+            break;
+          }
         }
+
+        const springForce = -config.tension * 0.000001 * (spring.val - targetVal);
+        const dampingForce = -config.friction * 0.001 * velocity;
+        const acceleration = (springForce + dampingForce) / config.mass; // pt/ms^2
+
+        velocity = velocity + acceleration * step; // pt/ms
+        spring.val = spring.val + velocity * step;
       }
-
-      const springForce = -config.tension * 0.000001 * (spring.val - targetVal);
-      const dampingForce = -config.friction * 0.001 * velocity;
-      const acceleration = (springForce + dampingForce) / config.mass; // pt/ms^2
-
-      velocity = velocity + acceleration * step; // pt/ms
-      spring.val = spring.val + velocity * step;
     }
     if (finished) {
       cancelFn = null;
+      velocity = 0;
       spring.val = targetVal;
       onUpdate(targetVal);
       onFinish();
@@ -331,8 +337,11 @@ const createHandler = (key, _opts, handlersPerKey, removeNode) => {
         nodeInfo.positionSpring.animate(before, target, parentDiff, nodeInfo.node.style.transform);
       }
       if (!nodeInfo.positionSpring.isActive()) onRest();
+    },
+    clean: () => {
       before = null;
       target = null;
+      offset = null;
     },
     refFn: node => {
       if (node) {
@@ -402,27 +411,21 @@ export default class FlipGroup extends React.Component {
   componentDidUpdate(prevProps) {
     if (prevProps.changeKey === this.props.changeKey) return;
     const handlers = Object.values(this.handlersPerKey);
-
     const entering = handlers.filter(h => this.enteringKeys[h.key]);
-    entering.forEach(h => h.enter());
-    entering.forEach(h => {
-      h.measureBefore();
-      delete this.enteringKeys[h.key];
-    });
-
-    handlers.forEach(h => h.reset());
-
     const leaving = handlers.filter(h => this.leavingKeys[h.key]);
-    leaving.forEach(h => {
-      h.applyLeavePosition();
-      delete this.leavingKeys[h.key];
-    });
+
+    leaving.forEach(h => h.reset());
+    leaving.forEach(h => h.applyLeavePosition());
     leaving.forEach(h => h.measureLeaving());
     leaving.forEach(h => h.removeFromFlow());
     leaving
       .map(h => h.opts.parentFlipKey && this.handlersPerKey[h.opts.parentFlipKey])
       .map(parent => parent && parent.measureAfter());
     leaving.forEach(h => h.relocateLeaving());
+
+    handlers.forEach(h => {
+      if (!this.enteringKeys[h.key] && !this.leavingKeys[h.key]) h.reset();
+    });
 
     (this.props.keysAndData || []).forEach(({key}) => {
       const handler = this.handlersPerKey[key];
@@ -431,8 +434,16 @@ export default class FlipGroup extends React.Component {
       }
     });
 
+    entering.forEach(h => h.enter());
+    entering.forEach(h => h.measureBefore());
+    entering.forEach(h => h.reset());
+
     handlers.forEach(h => h.measureAfter());
     handlers.forEach(h => h.animate());
+    handlers.forEach(h => h.clean());
+
+    leaving.forEach(h => delete this.leavingKeys[h.key]);
+    entering.forEach(h => delete this.enteringKeys[h.key]);
   }
 
   render() {

@@ -132,3 +132,40 @@ export const AppearOnlyPresence = () => {
     </div>
   );
 };
+
+const case1 = [{key: 1, data: null}];
+const case2 = [{key: 2, data: null}];
+
+export const DisappearSampleOne = () => {
+  const [present, setPresent] = React.useState(true);
+
+  return (
+    <div>
+      <FlipGroup changeKey={present} keysAndData={present ? case1 : case2}>
+        {(registerNode, keysAndData) => (
+          <div style={{background: "yellow", height: 20, display: "flex"}}>
+            {keysAndData.map(({key}) => (
+              <div
+                key={key}
+                ref={registerNode(key, {
+                  enterPosition: {top: -5},
+                  leavePosition: {top: 5},
+                  onPresence: val => ({opacity: val}),
+                })}
+                style={{
+                  position: "relative",
+                  background: "red",
+                  width: 20,
+                  height: 20,
+                }}
+              >
+                {key}
+              </div>
+            ))}
+          </div>
+        )}
+      </FlipGroup>
+      <button onClick={() => setPresent(!present)}>toggle</button>
+    </div>
+  );
+};
