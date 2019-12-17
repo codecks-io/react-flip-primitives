@@ -317,7 +317,8 @@ const createHandler = (key, _opts, handlersPerKey, removeNode) => {
       if (handler.opts.parentFlipKey) {
         const parentHandler = handlersPerKey[handler.opts.parentFlipKey];
         if (parentHandler) {
-          parentDiff = parentHandler._getDiff();
+          const diff = parentHandler._getDiff();
+          if (diff.before) parentDiff = diff;
         } else if (process.env.NODE_ENV !== "production") {
           // eslint-disable-next-line no-console
           console.warn(
