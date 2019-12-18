@@ -9,7 +9,7 @@ let nextFnKey = 0;
 
 const onNextFrame = fn => {
   if (!currMs) currMs = new Date().getTime();
-  if (nextFrameRequested) {
+  if (!nextFrameRequested) {
     requestAnimationFrame(() => {
       const dt = new Date().getTime() - currMs;
       const fns = Object.values(nextFrameFns);
