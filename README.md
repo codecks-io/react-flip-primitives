@@ -36,11 +36,11 @@ import FlipGroup from "react-flip-primitives";
       {keysAndData.map(kd => (
         <Avatar
           key={kd.key}
-          user={kd.user}
+          user={kd.data}
           ref={registerNode(kd.key, {
             enterPosition: {transform: "translate(0, -20px)"},
             leavePosition: {transform: "translate(0, 20px)"},
-            onPresence: val => ({opacity: val}),
+            onPresence: presence => ({opacity: presence}),
           })}
         />
       ))}
