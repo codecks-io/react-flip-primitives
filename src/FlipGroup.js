@@ -3,28 +3,26 @@ import mergeDiff from "./mergeDiff";
 import isUnitlessNumber from "./isUnitlessNumber";
 
 let nextFrameFns = {};
-let nextFnCount = 0;
+let nextFrameRequested = false;
 let currMs = null;
 let nextFnKey = 0;
 
 const onNextFrame = fn => {
   if (!currMs) currMs = new Date().getTime();
-  if (nextFnCount === 0) {
+  if (nextFrameRequested) {
     requestAnimationFrame(() => {
       const dt = new Date().getTime() - currMs;
       const fns = Object.values(nextFrameFns);
-
       currMs = null;
-      nextFnCount = 0;
+      nextFrameRequested = false;
       nextFrameFns = {};
       fns.forEach(f => f(dt));
     });
   }
-  nextFnCount += 1;
+  nextFrameRequested = true;
   const key = (nextFnKey += 1);
   nextFrameFns[key] = fn;
   return () => {
-    nextFnCount -= 1;
     delete nextFrameFns[key];
   };
 };
@@ -345,6 +343,7 @@ const createHandler = (key, _opts, handlersPerKey, removeNode) => {
     },
     refFn: node => {
       if (node) {
+        if (handlersPerKey[key]) throw new Error(`there's already a node with "${key}"!`);
         nodeInfo = {
           node,
           positionSpring: createPositionSpring({node, config: positionSpringConfig, onRest}),
@@ -353,6 +352,7 @@ const createHandler = (key, _opts, handlersPerKey, removeNode) => {
         springs.position = nodeInfo.positionSpring;
         handlersPerKey[key] = handler;
       } else {
+        nodeInfo = null;
         Object.values(springs).forEach(s => s.cancel());
         delete handlersPerKey[key];
       }
@@ -360,6 +360,25 @@ const createHandler = (key, _opts, handlersPerKey, removeNode) => {
     _getDiff: () => ({before, target}),
   };
   return handler;
+};
+
+let batchTimeoutId = null;
+let batchFns = {};
+let nextBatchKey = 0;
+
+const onNextBatch = fn => {
+  const key = (nextBatchKey += 1);
+  if (!batchTimeoutId) {
+    batchTimeoutId = setTimeout(() => {
+      Object.values(batchFns).forEach(f => f());
+      batchTimeoutId = null;
+      batchFns = {};
+    }, 50);
+  }
+  batchFns[key] = fn;
+  return () => {
+    delete batchFns[key];
+  };
 };
 
 export default class FlipGroup extends React.Component {
@@ -374,7 +393,8 @@ export default class FlipGroup extends React.Component {
 
   removeLeavingNode = key => {
     if (!this.cancelLeavingFn) {
-      this.cancelLeavingFn = onNextFrame(() => {
+      // not using onNextFrame here as it's a very bad idea to combine unmount logic which has an effect on springs running in the same frame!
+      this.cancelLeavingFn = onNextBatch(() => {
         this.cancelLeavingFn = null;
         this.renderedKeysAndData = this.renderedKeysAndData.filter(
           d => !this.toBeRemovedKeys.has(d.key)
