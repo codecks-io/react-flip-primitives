@@ -110,7 +110,7 @@ const createPositionSpring = ({node, config, onRest}) => {
   let xVal = null;
   let yVal = null;
   let existingTransform = null;
-  let existingPointerEvents = undefined;
+  let existingPointerEvents = null;
   const styleIfDone = () => {
     if ((!xSpring || xVal !== null) && (!ySpring || yVal !== null)) {
       node.style.transform = createTransform(xVal, yVal, existingTransform);
@@ -121,14 +121,20 @@ const createPositionSpring = ({node, config, onRest}) => {
   const resetIfDone = () => {
     if (!xSpring && !ySpring) {
       node.style.transform = existingTransform;
-      if (noPointerEvents) node.style.pointerEvents = existingPointerEvents;
+      if (existingPointerEvents !== null) {
+        node.style.pointerEvents = existingPointerEvents;
+        existingPointerEvents = null;
+      }
       onRest();
     }
   };
   return {
     reset: () => {
       if (xSpring || ySpring) node.style.transform = existingTransform;
-      if (noPointerEvents) node.style.pointerEvents = existingPointerEvents;
+      if (existingPointerEvents !== null) {
+        node.style.pointerEvents = existingPointerEvents;
+        existingPointerEvents = null;
+      }
     },
     animate: (beforeRect, targetRect, parentDiff, nodeStyle) => {
       const xParent = parentDiff ? parentDiff.target.left - parentDiff.before.left : 0;
@@ -137,14 +143,15 @@ const createPositionSpring = ({node, config, onRest}) => {
       const xDiff = targetRect.left - beforeRect.left - xParent;
       const yDiff = targetRect.top - beforeRect.top - yParent;
 
+      if (!xSpring && !ySpring && !xDiff && !yDiff) return;
+
       existingTransform = nodeStyle.transform;
+      node.style.transform = createTransform(-xDiff, -yDiff, existingTransform);
+
       if (noPointerEvents) {
-        existingPointerEvents = nodeStyle.pointerEvents;
+        existingPointerEvents = nodeStyle.pointerEvents || "";
         nodeStyle.pointerEvents = "none";
       }
-
-      if (!xSpring && !ySpring && !xDiff && !yDiff) return;
-      node.style.transform = createTransform(-xDiff, -yDiff, existingTransform);
 
       if (!xSpring) {
         if (xDiff !== 0) {
