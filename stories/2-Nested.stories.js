@@ -5,6 +5,48 @@ export default {
   title: "Nesting",
 };
 
+export const NoNested = () => {
+  const [boxes, setBoxes] = React.useState({1: {parent: 0, id: 1}});
+
+  return (
+    <div>
+      <FlipGroup
+        changeKey={boxes}
+        keysAndData={Object.values(boxes).map(b => ({key: b.id, data: b}))}
+      >
+        {(registerNode, keysAndData) =>
+          [0, 1].map(parentId => (
+            <div key={parentId} style={{background: "yellow", padding: 10, margin: 20, height: 50}}>
+              {keysAndData
+                .filter(kd => kd.data.parent === parentId)
+                .map(kd => (
+                  <button
+                    key={kd.key}
+                    style={{
+                      background: "red",
+                      position: "relative",
+                      zIndex: 1,
+                      width: 20,
+                      height: 20,
+                      margin: 5,
+                    }}
+                    ref={registerNode(kd.key)}
+                    onClick={() =>
+                      setBoxes(b => ({
+                        ...b,
+                        [kd.data.id]: {...kd.data, parent: 1 - kd.data.parent},
+                      }))
+                    }
+                  />
+                ))}
+            </div>
+          ))
+        }
+      </FlipGroup>
+    </div>
+  );
+};
+
 export const NestedOne = () => {
   const [boxes, setBoxes] = React.useState({1: {parent: 0, id: 1}, 2: {parent: 1, id: 2}});
 
