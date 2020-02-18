@@ -94,8 +94,10 @@ The `FlipGroup` manages all nodes that are affected by a specific state change. 
 
   typically something like `{enterPosition: {transform: 'translate(-10,0) scale(0.5)'}}`. Note that the passed style object should only contain styles affecting the position of the element. For styling e.g. position, use the `onPresence` callback
 
-- **`opts.positionSpringConfig={springConfig}`**
-  defaults to `{mass: 1, tension: 170, friction: 26, precision: 0.1}`
+- **`opts.positionSpringConfig={...springConfig, noPointerEvents: boolean}`**
+  defaults to `{mass: 1, tension: 170, friction: 26, precision: 0.1, noPointerEvents: false}`
+
+  Setting `noPointerEvents` to `true` will set `pointer-events: none` to a node whose position is currently animated.
 
 * **`opts.onPresence={(presence) => style}`**
 

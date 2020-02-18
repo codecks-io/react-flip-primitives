@@ -104,11 +104,13 @@ const createTransform = (x, y, existing) => {
 };
 
 const createPositionSpring = ({node, config, onRest}) => {
+  const {noPointerEvents, ...springConfig} = config;
   let xSpring = null;
   let ySpring = null;
   let xVal = null;
   let yVal = null;
   let existingTransform = null;
+  let existingPointerEvents = undefined;
   const styleIfDone = () => {
     if ((!xSpring || xVal !== null) && (!ySpring || yVal !== null)) {
       node.style.transform = createTransform(xVal, yVal, existingTransform);
@@ -119,24 +121,30 @@ const createPositionSpring = ({node, config, onRest}) => {
   const resetIfDone = () => {
     if (!xSpring && !ySpring) {
       node.style.transform = existingTransform;
+      if (noPointerEvents) node.style.pointerEvents = existingPointerEvents;
       onRest();
     }
   };
   return {
     reset: () => {
       if (xSpring || ySpring) node.style.transform = existingTransform;
+      if (noPointerEvents) node.style.pointerEvents = existingPointerEvents;
     },
-    animate: (beforeRect, targetRect, parentDiff, _existingTransform) => {
+    animate: (beforeRect, targetRect, parentDiff, nodeStyle) => {
       const xParent = parentDiff ? parentDiff.target.left - parentDiff.before.left : 0;
       const yParent = parentDiff ? parentDiff.target.top - parentDiff.before.top : 0;
 
       const xDiff = targetRect.left - beforeRect.left - xParent;
       const yDiff = targetRect.top - beforeRect.top - yParent;
 
-      existingTransform = _existingTransform;
+      existingTransform = nodeStyle.transform;
+      if (noPointerEvents) {
+        existingPointerEvents = nodeStyle.pointerEvents;
+        nodeStyle.pointerEvents = "none";
+      }
 
       if (!xSpring && !ySpring && !xDiff && !yDiff) return;
-      node.style.transform = createTransform(-xDiff, -yDiff, _existingTransform);
+      node.style.transform = createTransform(-xDiff, -yDiff, existingTransform);
 
       if (!xSpring) {
         if (xDiff !== 0) {
@@ -150,7 +158,7 @@ const createPositionSpring = ({node, config, onRest}) => {
               resetIfDone();
             },
             startVal: -xDiff,
-            config,
+            config: springConfig,
           });
           xSpring.animateTo(0);
         }
@@ -170,7 +178,7 @@ const createPositionSpring = ({node, config, onRest}) => {
               resetIfDone();
             },
             startVal: -yDiff,
-            config,
+            config: springConfig,
           });
           ySpring.animateTo(0);
         }
@@ -332,7 +340,7 @@ const createHandler = (key, _opts, handlersPerKey, removeNode) => {
       }
       if (before) {
         // if a key was present from the start, but the ref was handed in later, no `before` is available
-        nodeInfo.positionSpring.animate(before, target, parentDiff, nodeInfo.node.style.transform);
+        nodeInfo.positionSpring.animate(before, target, parentDiff, nodeInfo.node.style);
       }
       if (!nodeInfo.positionSpring.isActive()) onRest();
     },
