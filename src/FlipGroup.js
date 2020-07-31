@@ -215,6 +215,13 @@ const setAndResetStyles = (node, styles) => {
   return () => prev.forEach(([key, val]) => (node.style[key] = val));
 };
 
+const fauxNode = {
+  style: {},
+  getBoundingClientRect: () => ({left: 0, top: 0, width: 1, height: 1}),
+  offsetLeft: 0,
+  offsetTop: 0,
+};
+
 // eslint-disable-next-line max-lines-per-function
 const createHandler = (key, _opts, handlersPerKey, removeNode) => {
   let nodeInfo = null; // {node, positionSpring}
@@ -358,18 +365,33 @@ const createHandler = (key, _opts, handlersPerKey, removeNode) => {
     },
     refFn: (node) => {
       if (node) {
-        if (handlersPerKey[key]) throw new Error(`there's already a node with "${key}"!`);
-        nodeInfo = {
-          node,
-          positionSpring: createPositionSpring({node, config: positionSpringConfig, onRest}),
-        };
-        resets.position = () => nodeInfo.positionSpring.reset();
-        springs.position = nodeInfo.positionSpring;
-        handlersPerKey[key] = handler;
+        if (nodeInfo) {
+          if (nodeInfo.node !== fauxNode) {
+            // eslint-disable-next-line no-console
+            console.warn(`there's already a node with "${key}"!`);
+          }
+          nodeInfo.node = node;
+          if (nodeInfo.cancelSelfDestruction) {
+            nodeInfo.cancelSelfDestruction();
+            nodeInfo.cancelSelfDestruction = null;
+          }
+        } else {
+          nodeInfo = {
+            node,
+            positionSpring: createPositionSpring({node, config: positionSpringConfig, onRest}),
+            performSelfDestruction: null,
+          };
+          resets.position = () => nodeInfo.positionSpring.reset();
+          springs.position = nodeInfo.positionSpring;
+          handlersPerKey[key] = handler;
+        }
       } else {
-        nodeInfo = null;
-        Object.values(springs).forEach((s) => s.cancel());
-        delete handlersPerKey[key];
+        nodeInfo.node = fauxNode;
+        nodeInfo.cancelSelfDestruction = onNextFrame(() => {
+          nodeInfo = null;
+          Object.values(springs).forEach((s) => s.cancel());
+          delete handlersPerKey[key];
+        });
       }
     },
     _getDiff: () => ({before, target}),

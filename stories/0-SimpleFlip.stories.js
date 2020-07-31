@@ -163,8 +163,8 @@ const UpdateRef = React.forwardRef(({as: Comp = "div", counter, ...props}, ref) 
   const [handleRef, setHandleRef] = React.useState(() => (node) => ref(node));
   React.useEffect(() => {
     if (lastCounterRef.current !== counter) {
-      setHandleRef(() => (node) => ref(node));
       lastCounterRef.current = counter;
+      setHandleRef(() => (node) => ref(node));
     }
   }, [counter, ref]);
   return <Comp {...props} ref={handleRef} />;
@@ -182,10 +182,8 @@ export const UpdateRefWithinAnimation = () => {
     if (lastPosRef.current === pos) return;
     lastPosRef.current = pos;
     let timeoutId = setTimeout(() => {
+      timeoutId = null;
       setKey((k) => (k === "blue" ? "pink" : "blue"));
-      timeoutId = setTimeout(() => {
-        // setKey((k) => (k === "blue" ? "pink" : "blue"));
-      }, 250);
     }, 250);
     return () => {
       if (timeoutId) clearTimeout(timeoutId);
