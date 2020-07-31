@@ -7,7 +7,7 @@ let nextFrameRequested = false;
 let currMs = null;
 let nextFnKey = 0;
 
-const onNextFrame = fn => {
+const onNextFrame = (fn) => {
   if (!currMs) currMs = new Date().getTime();
   if (!nextFrameRequested) {
     requestAnimationFrame(() => {
@@ -16,7 +16,7 @@ const onNextFrame = fn => {
       currMs = null;
       nextFrameRequested = false;
       nextFrameFns = {};
-      fns.forEach(f => f(dt));
+      fns.forEach((f) => f(dt));
     });
   }
   nextFrameRequested = true;
@@ -42,7 +42,7 @@ const createSpring = ({onUpdate, onFinish, startVal, config}) => {
 
   const restVelocity = config.restVelocity || config.precision / 10;
 
-  const doStep = dt => {
+  const doStep = (dt) => {
     let finished = false;
     if (dt > 250) {
       // if steps take a long time, don't bother with doing spring animations
@@ -82,7 +82,7 @@ const createSpring = ({onUpdate, onFinish, startVal, config}) => {
 
   const spring = {
     val: startVal,
-    animateTo: target => {
+    animateTo: (target) => {
       targetVal = target;
       if (!cancelFn) {
         cancelFn = onNextFrame(doStep);
@@ -156,7 +156,7 @@ const createPositionSpring = ({node, config, onRest}) => {
       if (!xSpring) {
         if (xDiff !== 0) {
           xSpring = createSpring({
-            onUpdate: val => {
+            onUpdate: (val) => {
               xVal = val;
               styleIfDone();
             },
@@ -176,7 +176,7 @@ const createPositionSpring = ({node, config, onRest}) => {
       if (!ySpring) {
         if (yDiff !== 0) {
           ySpring = createSpring({
-            onUpdate: val => {
+            onUpdate: (val) => {
               yVal = val;
               styleIfDone();
             },
@@ -227,13 +227,13 @@ const createHandler = (key, _opts, handlersPerKey, removeNode) => {
   const springs = {};
   const onRest = () => {
     if (handler.isLeaving) {
-      if (Object.values(springs).every(s => !s.isActive())) removeNode(key);
+      if (Object.values(springs).every((s) => !s.isActive())) removeNode(key);
     }
   };
 
-  const createPresenceSpring = startVal => {
+  const createPresenceSpring = (startVal) => {
     springs.presence = createSpring({
-      onUpdate: val => {
+      onUpdate: (val) => {
         if (nodeInfo) applyStyles(nodeInfo.node, handler.opts.onPresence(val));
       },
       onFinish: onRest,
@@ -267,7 +267,7 @@ const createHandler = (key, _opts, handlersPerKey, removeNode) => {
       before = nodeInfo && nodeInfo.node.getBoundingClientRect();
     },
     reset: () => {
-      Object.values(resets).forEach(fn => fn());
+      Object.values(resets).forEach((fn) => fn());
     },
     applyLeavePosition: () => {
       handler.isLeaving = true;
@@ -356,7 +356,7 @@ const createHandler = (key, _opts, handlersPerKey, removeNode) => {
       target = null;
       offset = null;
     },
-    refFn: node => {
+    refFn: (node) => {
       if (node) {
         if (handlersPerKey[key]) throw new Error(`there's already a node with "${key}"!`);
         nodeInfo = {
@@ -368,7 +368,7 @@ const createHandler = (key, _opts, handlersPerKey, removeNode) => {
         handlersPerKey[key] = handler;
       } else {
         nodeInfo = null;
-        Object.values(springs).forEach(s => s.cancel());
+        Object.values(springs).forEach((s) => s.cancel());
         delete handlersPerKey[key];
       }
     },
@@ -381,11 +381,11 @@ let batchTimeoutId = null;
 let batchFns = {};
 let nextBatchKey = 0;
 
-const onNextBatch = fn => {
+const onNextBatch = (fn) => {
   const key = (nextBatchKey += 1);
   if (!batchTimeoutId) {
     batchTimeoutId = setTimeout(() => {
-      Object.values(batchFns).forEach(f => f());
+      Object.values(batchFns).forEach((f) => f());
       batchTimeoutId = null;
       batchFns = {};
     }, 50);
@@ -406,13 +406,13 @@ export default class FlipGroup extends React.Component {
     this.toBeRemovedKeys = new Set();
   }
 
-  removeLeavingNode = key => {
+  removeLeavingNode = (key) => {
     if (!this.cancelLeavingFn) {
       // not using onNextFrame here as it's a very bad idea to combine unmount logic which has an effect on springs running in the same frame!
       this.cancelLeavingFn = onNextBatch(() => {
         this.cancelLeavingFn = null;
         this.renderedKeysAndData = this.renderedKeysAndData.filter(
-          d => !this.toBeRemovedKeys.has(d.key)
+          (d) => !this.toBeRemovedKeys.has(d.key)
         );
         this.toBeRemovedKeys.clear();
         this.forceUpdate();
@@ -428,7 +428,7 @@ export default class FlipGroup extends React.Component {
   getSnapshotBeforeUpdate(prevProps) {
     if (prevProps.changeKey === this.props.changeKey) return null;
     const handlers = Object.values(this.handlersPerKey);
-    handlers.forEach(h => h.measureBefore());
+    handlers.forEach((h) => h.measureBefore());
     return null;
   }
 
@@ -446,19 +446,19 @@ export default class FlipGroup extends React.Component {
   componentDidUpdate(prevProps) {
     if (prevProps.changeKey === this.props.changeKey) return;
     const handlers = Object.values(this.handlersPerKey);
-    const entering = handlers.filter(h => this.enteringKeys[h.key]);
-    const leaving = handlers.filter(h => this.leavingKeys[h.key]);
+    const entering = handlers.filter((h) => this.enteringKeys[h.key]);
+    const leaving = handlers.filter((h) => this.leavingKeys[h.key]);
 
-    leaving.forEach(h => h.reset());
-    leaving.forEach(h => h.applyLeavePosition());
-    leaving.forEach(h => h.measureLeaving());
-    leaving.forEach(h => h.removeFromFlow());
+    leaving.forEach((h) => h.reset());
+    leaving.forEach((h) => h.applyLeavePosition());
+    leaving.forEach((h) => h.measureLeaving());
+    leaving.forEach((h) => h.removeFromFlow());
     leaving
-      .map(h => h.opts.parentFlipKey && this.handlersPerKey[h.opts.parentFlipKey])
-      .map(parent => parent && parent.measureAfter());
-    leaving.forEach(h => h.relocateLeaving());
+      .map((h) => h.opts.parentFlipKey && this.handlersPerKey[h.opts.parentFlipKey])
+      .map((parent) => parent && parent.measureAfter());
+    leaving.forEach((h) => h.relocateLeaving());
 
-    handlers.forEach(h => {
+    handlers.forEach((h) => {
       if (!this.enteringKeys[h.key] && !this.leavingKeys[h.key]) h.reset();
     });
 
@@ -469,21 +469,21 @@ export default class FlipGroup extends React.Component {
       }
     });
 
-    entering.forEach(h => h.enter());
-    entering.forEach(h => h.measureBefore());
-    entering.forEach(h => h.reset());
+    entering.forEach((h) => h.enter());
+    entering.forEach((h) => h.measureBefore());
+    entering.forEach((h) => h.reset());
 
-    handlers.forEach(h => h.measureAfter());
-    handlers.forEach(h => h.animate());
-    handlers.forEach(h => h.clean());
+    handlers.forEach((h) => h.measureAfter());
+    handlers.forEach((h) => h.animate());
+    handlers.forEach((h) => h.clean());
 
-    leaving.forEach(h => delete this.leavingKeys[h.key]);
-    entering.forEach(h => delete this.enteringKeys[h.key]);
+    leaving.forEach((h) => delete this.leavingKeys[h.key]);
+    entering.forEach((h) => delete this.enteringKeys[h.key]);
   }
 
   render() {
     const keydAndData = this.props.keysAndData || [];
-    keydAndData.forEach(kd => {
+    keydAndData.forEach((kd) => {
       if (this.leavingKeys[kd.key]) delete this.leavingKeys[kd.key];
     });
 

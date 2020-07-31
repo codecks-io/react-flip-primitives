@@ -12,14 +12,14 @@ export const NoNested = () => {
     <div>
       <FlipGroup
         changeKey={boxes}
-        keysAndData={Object.values(boxes).map(b => ({key: b.id, data: b}))}
+        keysAndData={Object.values(boxes).map((b) => ({key: b.id, data: b}))}
       >
         {(registerNode, keysAndData) =>
-          [0, 1].map(parentId => (
+          [0, 1].map((parentId) => (
             <div key={parentId} style={{background: "yellow", padding: 10, margin: 20, height: 50}}>
               {keysAndData
-                .filter(kd => kd.data.parent === parentId)
-                .map(kd => (
+                .filter((kd) => kd.data.parent === parentId)
+                .map((kd) => (
                   <button
                     key={kd.key}
                     style={{
@@ -32,7 +32,7 @@ export const NoNested = () => {
                     }}
                     ref={registerNode(kd.key)}
                     onClick={() =>
-                      setBoxes(b => ({
+                      setBoxes((b) => ({
                         ...b,
                         [kd.data.id]: {...kd.data, parent: 1 - kd.data.parent},
                       }))
@@ -54,18 +54,18 @@ export const NestedOne = () => {
     <div>
       <FlipGroup
         changeKey={boxes}
-        keysAndData={Object.values(boxes).map(b => ({key: b.id, data: b}))}
+        keysAndData={Object.values(boxes).map((b) => ({key: b.id, data: b}))}
       >
         {(registerNode, keysAndData) =>
-          [0, 1].map(parentId => (
+          [0, 1].map((parentId) => (
             <div
               key={parentId}
               style={{background: "yellow", padding: 10, margin: 20}}
               ref={registerNode(`parent-${parentId}`)}
             >
               {keysAndData
-                .filter(kd => kd.data.parent === parentId)
-                .map(kd => (
+                .filter((kd) => kd.data.parent === parentId)
+                .map((kd) => (
                   <button
                     key={kd.key}
                     style={{
@@ -78,7 +78,7 @@ export const NestedOne = () => {
                     }}
                     ref={registerNode(kd.key, {parentFlipKey: `parent-${kd.data.parent}`})}
                     onClick={() =>
-                      setBoxes(b => ({
+                      setBoxes((b) => ({
                         ...b,
                         [kd.data.id]: {...kd.data, parent: 1 - kd.data.parent},
                       }))
@@ -93,12 +93,12 @@ export const NestedOne = () => {
   );
 };
 
-const range = n => Array.from(new Array(n), (a, i) => i);
+const range = (n) => Array.from(new Array(n), (a, i) => i);
 
 const shuffleBoxes = (nBox, maxBoxCount) => {
   return range(nBox)
     .filter(() => Math.random() > 0.2)
-    .map(i => ({
+    .map((i) => ({
       id: i,
       parent: Math.floor(Math.random() * maxBoxCount),
     }));
@@ -111,18 +111,18 @@ export const CrazyBoxes = () => {
   const [boxes, setBoxes] = React.useState(shuffleBoxes(BOX_COUNT, PARENT_COUNT));
 
   return (
-    <FlipGroup changeKey={boxes} keysAndData={boxes.map(b => ({key: b.id, data: b}))}>
+    <FlipGroup changeKey={boxes} keysAndData={boxes.map((b) => ({key: b.id, data: b}))}>
       {(registerNode, keysAndData) => (
         <div>
-          {range(PARENT_COUNT).map(parentId => (
+          {range(PARENT_COUNT).map((parentId) => (
             <div
               key={parentId}
               style={{background: "yellow", padding: 10, margin: 20, position: "relative"}}
               ref={registerNode(`parent-${parentId}`)}
             >
               {keysAndData
-                .filter(kd => kd.data.parent === parentId)
-                .map(kd => (
+                .filter((kd) => kd.data.parent === parentId)
+                .map((kd) => (
                   <button
                     key={kd.key}
                     style={{
@@ -139,9 +139,9 @@ export const CrazyBoxes = () => {
                       enterPosition: {transform: "translate(0, -20px)"},
                       leavePosition: {transform: "translate(0, 20px)"},
                       parentFlipKey: `parent-${kd.data.parent}`,
-                      onPresence: val => ({opacity: val}),
+                      onPresence: (val) => ({opacity: val}),
                     })}
-                    onClick={() => setBoxes(boxes => boxes.filter(b => b.id !== kd.data.id))}
+                    onClick={() => setBoxes((boxes) => boxes.filter((b) => b.id !== kd.data.id))}
                   >
                     {kd.key}
                   </button>

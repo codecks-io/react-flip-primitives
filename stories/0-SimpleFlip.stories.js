@@ -11,7 +11,7 @@ export const SimpleX = () => {
   return (
     <div>
       <FlipGroup changeKey={pos}>
-        {registerNode => (
+        {(registerNode) => (
           <div style={{background: "yellow", position: "relative", height: 5}}>
             <div
               ref={registerNode("box")}
@@ -38,7 +38,7 @@ export const SimpleY = () => {
   return (
     <div>
       <FlipGroup changeKey={pos}>
-        {registerNode => (
+        {(registerNode) => (
           <div style={{background: "yellow", position: "relative", width: 5, height: 100}}>
             <div
               ref={registerNode("box")}
@@ -65,7 +65,7 @@ export const SimpleXY = () => {
   return (
     <div>
       <FlipGroup changeKey={pos}>
-        {registerNode => (
+        {(registerNode) => (
           <div style={{background: "yellow", position: "relative", width: 100, height: 100}}>
             <div
               ref={registerNode("box")}
@@ -97,7 +97,7 @@ export const UnmountTest = () => {
   return (
     <div>
       <FlipGroup changeKey={pos}>
-        {registerNode => (
+        {(registerNode) => (
           <div style={{background: "yellow", position: "relative", height: 5}}>
             {present && (
               <div
@@ -121,7 +121,7 @@ export const UnmountTest = () => {
   );
 };
 
-const createNPos = n =>
+const createNPos = (n) =>
   Array.from(new Array(n), () => [
     Math.round(Math.random() * 100),
     Math.round(Math.random() * 100),
@@ -134,7 +134,7 @@ export const PerfTest = () => {
   return (
     <div>
       <FlipGroup changeKey={pos}>
-        {registerNode => (
+        {(registerNode) => (
           <div style={{background: "yellow", position: "relative", width: 500, height: 500}}>
             {pos.map((p, i) => (
               <div

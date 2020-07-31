@@ -78,7 +78,7 @@ export const AppearTwo = () => {
                 ref={registerNode(key, {
                   enterPosition: {top: -5},
                   leavePosition: {top: 5},
-                  onPresence: val => ({opacity: val}),
+                  onPresence: (val) => ({opacity: val}),
                 })}
                 style={{
                   position: "relative",
@@ -116,7 +116,7 @@ export const AppearOnlyPresence = () => {
             {keysAndData.map(({key}) => (
               <div
                 key={key}
-                ref={registerNode(key, {onPresence: val => ({opacity: val})})}
+                ref={registerNode(key, {onPresence: (val) => ({opacity: val})})}
                 style={{
                   position: "relative",
                   background: "red",
@@ -150,7 +150,7 @@ export const DisappearSampleOne = () => {
                 ref={registerNode(key, {
                   enterPosition: {top: -5},
                   leavePosition: {top: 5},
-                  onPresence: val => ({opacity: val}),
+                  onPresence: (val) => ({opacity: val}),
                 })}
                 style={{
                   position: "relative",
