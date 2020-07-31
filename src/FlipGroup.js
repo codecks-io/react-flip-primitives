@@ -118,24 +118,21 @@ const createPositionSpring = ({node, config, onRest}) => {
       yVal = null;
     }
   };
+  const reset = () => {
+    if (xSpring || ySpring) node.style.transform = existingTransform;
+    if (existingPointerEvents !== null) {
+      node.style.pointerEvents = existingPointerEvents;
+      existingPointerEvents = null;
+    }
+  };
   const resetIfDone = () => {
     if (!xSpring && !ySpring) {
-      node.style.transform = existingTransform;
-      if (existingPointerEvents !== null) {
-        node.style.pointerEvents = existingPointerEvents;
-        existingPointerEvents = null;
-      }
+      reset();
       onRest();
     }
   };
   return {
-    reset: () => {
-      if (xSpring || ySpring) node.style.transform = existingTransform;
-      if (existingPointerEvents !== null) {
-        node.style.pointerEvents = existingPointerEvents;
-        existingPointerEvents = null;
-      }
-    },
+    reset,
     animate: (beforeRect, targetRect, parentDiff, nodeStyle) => {
       const xParent = parentDiff ? parentDiff.target.left - parentDiff.before.left : 0;
       const yParent = parentDiff ? parentDiff.target.top - parentDiff.before.top : 0;
@@ -196,6 +193,9 @@ const createPositionSpring = ({node, config, onRest}) => {
     cancel: () => {
       if (xSpring) xSpring.cancel();
       if (ySpring) ySpring.cancel();
+      reset();
+      xSpring = null;
+      ySpring = null;
     },
     isActive: () => xSpring || ySpring,
   };

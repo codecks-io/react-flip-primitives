@@ -157,3 +157,64 @@ export const PerfTest = () => {
     </div>
   );
 };
+
+const UpdateRef = React.forwardRef(({as: Comp = "div", counter, ...props}, ref) => {
+  const lastCounterRef = React.useRef(counter);
+  const [handleRef, setHandleRef] = React.useState(() => (node) => ref(node));
+  React.useEffect(() => {
+    if (lastCounterRef.current !== counter) {
+      setHandleRef(() => (node) => ref(node));
+      lastCounterRef.current = counter;
+    }
+  }, [counter, ref]);
+  return <Comp {...props} ref={handleRef} />;
+});
+
+export const UpdateRefWithinAnimation = () => {
+  const [pos, setPos] = React.useState(25);
+  const [key, setKey] = React.useState("blue");
+  const handleClick = () => {
+    setPos(Math.round(Math.random() * 100));
+  };
+  const lastPosRef = React.useRef(pos);
+
+  React.useEffect(() => {
+    if (lastPosRef.current === pos) return;
+    lastPosRef.current = pos;
+    let timeoutId = setTimeout(() => {
+      setKey((k) => (k === "blue" ? "pink" : "blue"));
+      timeoutId = setTimeout(() => {
+        // setKey((k) => (k === "blue" ? "pink" : "blue"));
+      }, 250);
+    }, 250);
+    return () => {
+      if (timeoutId) clearTimeout(timeoutId);
+    };
+  }, [pos]);
+
+  return (
+    <div>
+      <FlipGroup changeKey={pos}>
+        {(registerNode) => (
+          <div style={{background: "yellow", position: "relative", height: 15}}>
+            <UpdateRef
+              counter={key}
+              ref={registerNode("box", {
+                positionSpringConfig: {mass: 100, friction: 200, noPointerEvents: true},
+              })}
+              style={{
+                position: "absolute",
+                background: key,
+                width: 15,
+                height: "100%",
+                top: 0,
+                left: `${pos}%`,
+              }}
+            />
+          </div>
+        )}
+      </FlipGroup>
+      <button onClick={handleClick}>{pos}%</button>
+    </div>
+  );
+};
