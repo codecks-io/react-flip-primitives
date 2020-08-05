@@ -1,12 +1,12 @@
 {
   "dist/react-flip-primitives.umd.js": {
-    "bundled": 26205,
-    "minified": 9978,
-    "gzipped": 3389
+    "bundled": 26374,
+    "minified": 10041,
+    "gzipped": 3418
   },
   "dist/react-flip-primitives.umd.min.js": {
-    "bundled": 9881,
-    "minified": 9841,
-    "gzipped": 3335
+    "bundled": 9944,
+    "minified": 9904,
+    "gzipped": 3359
   }
 }
