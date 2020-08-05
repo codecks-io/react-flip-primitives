@@ -103,7 +103,8 @@ const createTransform = (x, y, existing) => {
   return `translate(${x || 0}px, ${y || 0}px)${existing ? ` ${existing}` : ""}`;
 };
 
-const createPositionSpring = ({node, config, onRest}) => {
+const createPositionSpring = ({node: passedNode, config, onRest}) => {
+  let node = passedNode;
   const {noPointerEvents, ...springConfig} = config;
   let xSpring = null;
   let ySpring = null;
@@ -132,6 +133,9 @@ const createPositionSpring = ({node, config, onRest}) => {
     }
   };
   return {
+    updateNode(newNode) {
+      node = newNode;
+    },
     reset,
     animate: (beforeRect, targetRect, parentDiff, nodeStyle) => {
       const xParent = parentDiff ? parentDiff.target.left - parentDiff.before.left : 0;
@@ -371,6 +375,7 @@ const createHandler = (key, _opts, handlersPerKey, removeNode) => {
             console.warn(`there's already a node with "${key}"!`);
           }
           nodeInfo.node = node;
+          nodeInfo.positionSpring.updateNode(node);
           if (nodeInfo.cancelSelfDestruction) {
             nodeInfo.cancelSelfDestruction();
             nodeInfo.cancelSelfDestruction = null;
