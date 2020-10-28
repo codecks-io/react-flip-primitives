@@ -119,8 +119,10 @@ const createPositionSpring = ({node: passedNode, config, onRest}) => {
       yVal = null;
     }
   };
-  const reset = () => {
-    if (xSpring || ySpring) node.style.transform = existingTransform;
+  const reset = (force) => {
+    if (xSpring || ySpring || force) {
+      node.style.transform = existingTransform;
+    }
     if (existingPointerEvents !== null) {
       node.style.pointerEvents = existingPointerEvents;
       existingPointerEvents = null;
@@ -128,7 +130,7 @@ const createPositionSpring = ({node: passedNode, config, onRest}) => {
   };
   const resetIfDone = () => {
     if (!xSpring && !ySpring) {
-      reset();
+      reset(true);
       onRest();
     }
   };
@@ -425,7 +427,7 @@ const onNextBatch = (fn) => {
 
 export default class FlipGroup extends React.Component {
   constructor(props) {
-    super(props);
+    super();
     this.handlersPerKey = {};
     this.enteringKeys = {};
     this.leavingKeys = {};

@@ -19,10 +19,8 @@
   "scripts": {
     "build": "db-scripts-bundle --size-snapshot",
     "lint": "eslint --max-warnings=0 src *.js",
-    "format": "prettier --write '{src,docs}/**/*.{js,css}' '*.js'",
+    "format": "prettier --write '{src,stories}/**/*.{js,css}' '*.js'",
     "setup": "npm install && npm run validate -s",
-    "docz:dev": "docz dev",
-    "docz:build": "docz build",
     "prepublish": "npm run lint && npm run build",
     "storybook": "start-storybook -p 6006",
     "build-storybook": "build-storybook"
